@@ -6,7 +6,7 @@
 set -euo pipefail
 
 EL_IMAGE="${EL_IMAGE:-zegl/extremely-linear:latest}"
-EL_FORMAT="${EL_FORMAT:-'%07d0'}"
+EL_FORMAT="${EL_FORMAT:-%07d0}"
 
 echo EL_IMAGE="${EL_IMAGE}"
 echo EL_FORMAT="${EL_FORMAT}"
@@ -30,9 +30,8 @@ i=0
 
 for sha1 in $commits; do
     # Desired prefix of commit
-    #prefix=$(printf '%04d' $i)
     prefix=$(printf "$EL_FORMAT" $i)
-
+    echo "--> PREFIX=$prefix"
     ((i=i+1))
 
     # Looping through the full history since the root commit
@@ -55,16 +54,14 @@ for sha1 in $commits; do
 
         # Add "magic: REPLACEME" to the commit message
         # githashcrash with replace REPLACEME with it's magic string
-        git show -s --format=%B "$sha1" > .msg
+        git show -s --format=%B "$sha1" | grep -v "magic: " > .msg
         echo >> .msg
         echo "magic: REPLACEME" >> .msg
         git commit --amend -F- < .msg
         rm .msg
 
         # Run githashcrash
-        git cat-file -p HEAD | \
-            docker run "$EL_IMAGE" "$prefix" | \
-            bash
+        docker run --volume "$PWD:/repo" "$EL_IMAGE" "$prefix" | bash
     fi
 done
 
