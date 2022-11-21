@@ -5,6 +5,14 @@
 
 set -euo pipefail
 
+EL_IMAGE="${EL_IMAGE:-zegl/extremely-linear:latest}"
+EL_FORMAT="${EL_FORMAT:-'%07d0'}"
+
+echo EL_IMAGE="${EL_IMAGE}"
+echo EL_FORMAT="${EL_FORMAT}"
+
+# exit 1
+
 # All commits in our repository (on the current branch)
 commits=$(git log --format=format:%H --reverse)
 
@@ -22,7 +30,8 @@ i=0
 
 for sha1 in $commits; do
     # Desired prefix of commit
-    prefix=$(printf '%04d' $i)
+    #prefix=$(printf '%04d' $i)
+    prefix=$(printf "$EL_FORMAT" $i)
 
     ((i=i+1))
 
@@ -36,24 +45,24 @@ for sha1 in $commits; do
         # Found the first commit that does not have the correct prefix
         # Reset to this commits parent (the last commit with a good prefix)
         if ((!did_reset)); then
-            echo "Found first misaligned commit=$sha1 parent=$prev_commit"
-            git reset --hard "$prev_commit"
+            echo "Found first misaligned commit=$sha1"
+            git reset --hard "$sha1"
             did_reset=1
+        else
+            # Cherry pick the next commit
+            git cherry-pick "$sha1"
         fi
-
-        # Cherry pick the bad commit
-        git cherry-pick "$sha1"
 
         # Add "magic: REPLACEME" to the commit message
         # githashcrash with replace REPLACEME with it's magic string
         git show -s --format=%B "$sha1" > .msg
         echo >> .msg
         echo "magic: REPLACEME" >> .msg
-        git commit --amend -F < .msg
+        git commit --amend -F- < .msg
         rm .msg
 
         # Run githashcrash
-        docker run --volume "${PWD}:/work" zegl/extremely-linear:latest "$prefix" | bash
+        docker run --volume "${PWD}:/work" "$EL_IMAGE" "$prefix" | bash
     fi
 done
 
