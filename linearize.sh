@@ -62,7 +62,9 @@ for sha1 in $commits; do
         rm .msg
 
         # Run githashcrash
-        docker run --volume "${PWD}:/work" "$EL_IMAGE" "$prefix" | bash
+        git cat-file -p HEAD | \
+            docker run "$EL_IMAGE" "$prefix" | \
+            bash
     fi
 done
 
