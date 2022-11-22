@@ -1,0 +1,25 @@
+#!/bin/bash
+#
+# shit – Short Git.
+
+# Final program to execute, arguments will be added to this array
+X=("git")
+
+# Convert arguments matching this format
+RE='^[0-9]{1,7}$'
+
+# Format to convert to
+EL_FORMAT="%07d0"
+
+for arg in "$@"; do
+    if [[ $arg =~ $RE ]] ; then
+        # Looks like a number, add padding
+        out=$(printf "$EL_FORMAT" $arg)
+        X+=("$out")
+    else
+        # Not a number, keep as-is
+        X+=("$arg")
+    fi
+done
+
+"${X[@]}"
