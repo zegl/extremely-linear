@@ -2,6 +2,8 @@
 
 Extremely Linear Git History
 
+![](https://westling.dev/_app/immutable/assets/github-d61ec626.png)
+
 ## Installation
 
 ```bash
