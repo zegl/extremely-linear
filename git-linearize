@@ -101,15 +101,6 @@ for sha1 in $commits; do
 
         echoinfo "[x] Fixing $sha1 (looking for prefix=$prefix)"
 
-        # Add "magic: REPLACEME" to the commit message
-        # githashcrash with replace REPLACEME with it's magic string
-        tmpfile=$(mktemp)
-        git show -s --format=%B "$sha1" | grep -v "magic: " > "$tmpfile"
-        echo >> "$tmpfile"
-        echo "magic: REPLACEME" >> "$tmpfile"
-        git commit --amend -F- < "$tmpfile"
-        rm "$tmpfile"
-
         # Run lucky_commit
         lucky_commit "$prefix"
     fi
