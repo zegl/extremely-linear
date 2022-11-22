@@ -1,8 +1,8 @@
-# extremely-linear
+# Extremely Linear Git History
 
-Extremely Linear Git History
+> Dreaming of a git commit history that looks like this?
 
-![](https://westling.dev/_app/immutable/assets/github-d61ec626.png)
+<img width="1197" alt="Screenshot 2022-11-22 at 16 16 40" src="https://user-images.githubusercontent.com/47952/203351228-383cd585-c135-4f63-ac3d-8f10707cc9c7.png">
 
 ## Installation
 
@@ -27,7 +27,11 @@ options:
 --format [format]         specify your own prefix format (pritnf style)
 ```
 
-## Shit – "short git"
+git-linearize requires the history to already be linear (no merge commits).
+
+**Beware:** git-linearize will rebase your entire project history. Do not run unless you know what you're doing. Create a backup first!
+
+## `shit` – "short git"
 
 This repository also contains `shit`. A git wrapper that converts non-padded prefixes to their padded counterpart.
 
