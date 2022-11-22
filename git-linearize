@@ -61,8 +61,6 @@ then
     exit 1
 fi
 
-# docker pull "$EL_IMAGE"
-
 # All commits in our repository (on the current branch)
 commits=$(git log --format=format:%H --reverse)
 
@@ -113,7 +111,6 @@ for sha1 in $commits; do
         rm "$tmpfile"
 
         # Run githashcrash
-        # docker run --volume "$PWD:/repo" "$EL_IMAGE" "$prefix" | bash
         githashcrash "$prefix" | bash
     fi
 done
