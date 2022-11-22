@@ -4,7 +4,7 @@
 #
 # Move this script to somewhere on your path, and run it as "git linearize"
 #
-# Built with https://github.com/Mattias-/githashcrash
+# Built with https://github.com/not-an-aardvark/lucky-commit
 
 set -euo pipefail
 
@@ -55,9 +55,9 @@ function echoerr() {
     printf "${RED}$1${NC}\n" >&2 
 }
 
-if ! command -v githashcrash &> /dev/null
+if ! command -v lucky_commit &> /dev/null
 then
-    echoerr "[!] Dependency githashcrash was not found on your PATH"
+    echoerr "[!] Dependency lucky_commit was not found on your PATH"
     exit 1
 fi
 
@@ -99,7 +99,7 @@ for sha1 in $commits; do
             git cherry-pick "$sha1"
         fi
 
-        echoinfo "[x] Fixing $sha1"
+        echoinfo "[x] Fixing $sha1 (looking for prefix=$prefix)"
 
         # Add "magic: REPLACEME" to the commit message
         # githashcrash with replace REPLACEME with it's magic string
@@ -110,8 +110,8 @@ for sha1 in $commits; do
         git commit --amend -F- < "$tmpfile"
         rm "$tmpfile"
 
-        # Run githashcrash
-        githashcrash "$prefix" | bash
+        # Run lucky_commit
+        lucky_commit "$prefix"
     fi
 done
 
