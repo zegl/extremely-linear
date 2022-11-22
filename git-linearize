@@ -1,6 +1,9 @@
 #!/bin/bash
 #
 # This script makes sure that all commit hashes have nice and incremental prefixes.
+#
+# Move this script to somewhere on your path, and run it as "git linearize"
+#
 # Built with https://github.com/Mattias-/githashcrash
 
 set -euo pipefail
@@ -8,10 +11,15 @@ set -euo pipefail
 EL_IMAGE="${EL_IMAGE:-zegl/extremely-linear:latest}"
 EL_FORMAT="${EL_FORMAT:-%07d0}"
 
-echo EL_IMAGE="${EL_IMAGE}"
-echo EL_FORMAT="${EL_FORMAT}"
+# echo EL_IMAGE="${EL_IMAGE}"
+# echo EL_FORMAT="${EL_FORMAT}"
 
-# exit 1
+function echoinfo() {
+    RED='\033[0;31m'
+    LIGHT_GREEN='\033[1;32m'
+    NC='\033[0m' # No Color
+    printf "${LIGHT_GREEN}$1${NC}\n"
+}
 
 # All commits in our repository (on the current branch)
 commits=$(git log --format=format:%H --reverse)
@@ -28,23 +36,25 @@ prev_commit=""
 did_reset=0
 i=0
 
+echoinfo "niiiice stuff"
+exit 0
+
 for sha1 in $commits; do
     # Desired prefix of commit
     prefix=$(printf "$EL_FORMAT" $i)
-    echo "--> PREFIX=$prefix"
     ((i=i+1))
 
     # Looping through the full history since the root commit
     # Making sure that each commit has the expected prefix
     if [[ "$sha1" == $prefix* ]] && ((!did_reset)); then
-        echo "$sha1 starts with $prefix, doing nothing"
+        echoinfo "[x] $sha1 starts with $prefix, doing nothing"
         prev_commit="$sha1"
         continue
     else
         # Found the first commit that does not have the correct prefix
         # Reset to this commits parent (the last commit with a good prefix)
         if ((!did_reset)); then
-            echo "Found first misaligned commit=$sha1"
+            echo "[x] Found first misaligned commit=$sha1"
             git reset --hard "$sha1"
             did_reset=1
         else
@@ -52,13 +62,16 @@ for sha1 in $commits; do
             git cherry-pick "$sha1"
         fi
 
+        echo "[x] Fixing $sha1"
+
         # Add "magic: REPLACEME" to the commit message
         # githashcrash with replace REPLACEME with it's magic string
-        git show -s --format=%B "$sha1" | grep -v "magic: " > .msg
-        echo >> .msg
-        echo "magic: REPLACEME" >> .msg
-        git commit --amend -F- < .msg
-        rm .msg
+        tmpfile=$(mktemp)
+        git show -s --format=%B "$sha1" | grep -v "magic: " > "$tmpfile"
+        echo >> "$tmpfile"
+        echo "magic: REPLACEME" >> "$tmpfile"
+        git commit --amend -F- < "$tmpfile"
+        rm "$tmpfile"
 
         # Run githashcrash
         docker run --volume "$PWD:/repo" "$EL_IMAGE" "$prefix" | bash
@@ -68,3 +81,5 @@ done
 # Move the branch that we used to be on to our new and __improved__ branch!
 git branch -D "$pre_branch"
 git checkout -b "$pre_branch"
+
+echo "[x] All done, have a good day"
