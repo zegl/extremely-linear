@@ -8,8 +8,40 @@
 
 set -euo pipefail
 
-# EL_IMAGE="${EL_IMAGE:-zegl/extremely-linear:latest}"
-EL_FORMAT="${EL_FORMAT:-%07d0}"
+EL_FORMAT="%07d0"
+
+while test $# -gt 0; do
+  case "$1" in
+    -h|--help)
+      echo "git linearize - Create an extremely linear git history"
+      echo " "
+      echo "git linearize [options]"
+      echo " "
+      echo "options:"
+      echo "-h, --help                show brief help"
+      echo "--short                   use shorter 6 digit prefix (quick mode)"
+      echo "--format [format]         specify your own prefix format (pritnf style)"
+      exit 0
+      ;;
+    --short)
+      EL_FORMAT="%06d"
+      shift
+      ;;
+    --format)
+      shift
+      if test $# -gt 0; then
+        export EL_FORMAT=$1
+      else
+        echo "no format specified"
+        exit 1
+      fi
+      shift
+      ;;
+    *)
+      break
+      ;;
+  esac
+done
 
 function echoinfo() {
     LIGHT_GREEN='\033[1;32m'
