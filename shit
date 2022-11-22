@@ -1,21 +1,35 @@
 #!/bin/bash
 #
 # shit – Short Git.
+#
+# Makes commit indexes from git-linearize ("Extremely Linear Git History") usable with git.
+# 
+# "shit show 14" -> "git show 00000140"
+# "shit log 10..14" -> "git log 00000100..00000140"
 
 # Final program to execute, arguments will be added to this array
 X=("git")
 
 # Convert arguments matching this format
-RE='^[0-9]{1,7}$'
+SINGLE='^[0-9]{1,7}$'
+
+# Range formats matching: "shit log 10..14"
+RANGE='^([0-9]{1,7})(\.{2,3})([0-9]{1,7})$'
 
 # Format to convert to
 EL_FORMAT="%07d0"
 
 for arg in "$@"; do
-    if [[ $arg =~ $RE ]] ; then
+    if [[ $arg =~ $SINGLE ]] ; then
         # Looks like a number, add padding
         out=$(printf "$EL_FORMAT" $arg)
         X+=("$out")
+    elif [[ $arg =~ $RANGE ]]; then
+        # Convert ranges like "10..14" to "00000100..00000140" 
+        first=$(printf "$EL_FORMAT" ${BASH_REMATCH[1]})
+        dots=${BASH_REMATCH[2]}
+        second=$(printf "$EL_FORMAT" ${BASH_REMATCH[3]})
+        X+=("${first}${dots}${second}")    
     else
         # Not a number, keep as-is
         X+=("$arg")
