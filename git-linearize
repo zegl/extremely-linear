@@ -150,7 +150,7 @@ for sha1 in $commits; do
 done
 
 # Move the branch that we used to be on to our new and __improved__ branch!
-git branch -D "$pre_branch"
-git checkout -b "$pre_branch"
+git branch -f "$pre_branch"
+git checkout "$pre_branch"
 
 echoinfo "[x] All done, have a good day"
