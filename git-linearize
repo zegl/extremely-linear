@@ -53,6 +53,7 @@ while test $# -gt 0; do
       echo "-h, --help                show brief help"
       echo "--short                   use shorter 6 digit prefix (quick mode)"
       echo "--format [format]         specify your own prefix format (pritnf style)"
+      echo "--install-hook            install git-linearize as a post-commit hook (current repo only)"
       exit 0
       ;;
     --short)
