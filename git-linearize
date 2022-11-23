@@ -41,6 +41,7 @@ EOM
 }
 
 EL_FORMAT="%07d0"
+VERBOSE_LOG=0
 
 while test $# -gt 0; do
   case "$1" in
@@ -51,6 +52,7 @@ while test $# -gt 0; do
       echo " "
       echo "options:"
       echo "-h, --help                show brief help"
+      echo "-v, --verbose             more verbose logging"
       echo "--short                   use shorter 6 digit prefix (quick mode)"
       echo "--format [format]         specify your own prefix format (pritnf style)"
       echo "--install-hook            install git-linearize as a post-commit hook (current repo only)"
@@ -75,13 +77,15 @@ while test $# -gt 0; do
       install_hook
       exit 0
       ;;
+    -v|--verbose)
+      shift
+      VERBOSE_LOG=1
+      ;;
     *)
       break
       ;;
   esac
 done
-
-
 
 if ! command -v lucky_commit &> /dev/null
 then
@@ -112,14 +116,20 @@ for sha1 in $commits; do
     # Looping through the full history since the root commit
     # Making sure that each commit has the expected prefix
     if [[ "$sha1" == $prefix* ]] && ((!did_reset)); then
-        echoinfo "[x] $sha1 starts with $prefix, doing nothing"
+        if ((VERBOSE_LOG)); then
+          echoinfo "[x] $sha1 starts with $prefix, doing nothing"
+        fi
+
         prev_commit="$sha1"
         continue
     else
         # Found the first commit that does not have the correct prefix
         # Reset to this commits parent (the last commit with a good prefix)
         if ((!did_reset)); then
-            echoinfo "[x] Found first misaligned commit=$sha1"
+            if ((VERBOSE_LOG)); then
+              echoinfo "[x] Found first misaligned commit=$sha1"
+            fi
+
             git reset --hard "$sha1"
             did_reset=1
         else
@@ -127,10 +137,15 @@ for sha1 in $commits; do
             git cherry-pick "$sha1"
         fi
 
-        echoinfo "[x] Fixing $sha1 (looking for prefix=$prefix)"
+        if ((VERBOSE_LOG)); then
+          echoinfo "[x] Fixing $sha1 (looking for prefix=$prefix)"
+        fi
 
         # Run lucky_commit
         lucky_commit "$prefix"
+
+        new_sha=$(git rev-parse HEAD)
+        echoinfo "[x] $sha1 is now $new_sha"
     fi
 done
 
