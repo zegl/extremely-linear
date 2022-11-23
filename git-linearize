@@ -149,7 +149,6 @@ function cmd_linearize() {
   git checkout -b extremely-linear
 
   # Find start commit
-  prev_commit=""
   did_reset=0
   i=0
 
@@ -164,8 +163,6 @@ function cmd_linearize() {
           if ((VERBOSE_LOG)); then
             echoinfo "[x] $sha1 starts with $prefix, doing nothing"
           fi
-
-          prev_commit="$sha1"
           continue
       else
           # Found the first commit that does not have the correct prefix
