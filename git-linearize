@@ -78,13 +78,19 @@ fi
 function echoinfo() {
     LIGHT_GREEN='\033[1;32m'
     NC='\033[0m' # No Color
-    printf "${LIGHT_GREEN}$1${NC}\n"
+    printf "${LIGHT_GREEN}%s${NC}\n" "$1"
 }
 
 function echoerr() {
     RED='\033[0;31m'
     NC='\033[0m' # No Color
-    printf "${RED}$1${NC}\n" >&2 
+    printf "${RED}%s${NC}\n" "$1" >&2
+}
+
+function echodebug() {
+    if ((VERBOSE_LOG)); then
+      echoinfo "$1"
+    fi
 }
 
 function git_root() {
@@ -134,7 +140,7 @@ function cmd_linearize() {
 
   # Check branch
   if [[ -n "$EL_IF_BRANCH" ]] && [[ "${EL_IF_BRANCH}" != "$(git_current_branch)" ]]; then
-    echoinfo "[x] Current branch is $(git_current_branch), expected ${EL_IF_BRANCH}. Skipping. :-)"
+    echodebug "[x] Current branch is $(git_current_branch), expected ${EL_IF_BRANCH}. Skipping. :-)"
     exit 0
   fi
 
@@ -154,23 +160,20 @@ function cmd_linearize() {
 
   for sha1 in $commits; do
       # Desired prefix of commit
+      # shellcheck disable=SC2059 # Disabled because EL_FORMAT contains the format
       prefix=$(printf "$EL_FORMAT" $i)
       ((i=i+1))
 
       # Looping through the full history since the root commit
       # Making sure that each commit has the expected prefix
       if [[ "$sha1" == $prefix* ]] && ((!did_reset)); then
-          if ((VERBOSE_LOG)); then
-            echoinfo "[x] $sha1 starts with $prefix, doing nothing"
-          fi
+          echodebug "[x] $sha1 starts with $prefix, doing nothing"
           continue
       else
           # Found the first commit that does not have the correct prefix
           # Reset to this commits parent (the last commit with a good prefix)
           if ((!did_reset)); then
-              if ((VERBOSE_LOG)); then
-                echoinfo "[x] Found first misaligned commit=$sha1"
-              fi
+              echodebug "[x] Found first misaligned commit=$sha1"
 
               git reset --hard "$sha1"
               did_reset=1
@@ -179,9 +182,7 @@ function cmd_linearize() {
               git cherry-pick --keep-redundant-commits --allow-empty-messages "$sha1"
           fi
 
-          if ((VERBOSE_LOG)); then
-            echoinfo "[x] Fixing $sha1 (looking for prefix=$prefix)"
-          fi
+          echodebug "[x] Fixing $sha1 (looking for prefix=$prefix)"
 
           # Run lucky_commit
           lucky_commit "$prefix"
