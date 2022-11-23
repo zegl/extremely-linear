@@ -29,8 +29,10 @@ git linearize [options]
 
 options:
 -h, --help                show brief help
+-v, --verbose             more verbose logging
 --short                   use shorter 6 digit prefix (quick mode)
 --format [format]         specify your own prefix format (pritnf style)
+--install-hook            install git-linearize as a post-commit hook (current repo only)
 ```
 
 git-linearize requires the history to already be linear (no merge commits).
