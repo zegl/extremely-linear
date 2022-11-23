@@ -8,6 +8,38 @@
 
 set -euo pipefail
 
+function echoinfo() {
+    LIGHT_GREEN='\033[1;32m'
+    NC='\033[0m' # No Color
+    printf "${LIGHT_GREEN}$1${NC}\n"
+}
+
+function echoerr() {
+    RED='\033[0;31m'
+    NC='\033[0m' # No Color
+    printf "${RED}$1${NC}\n" >&2 
+}
+
+function git_root() {
+  git rev-parse --show-toplevel
+}
+
+function install_hook() {
+  FILE="$(git_root)/.git/hooks/post-commit"
+  if [ -f $FILE ]; then
+   echoerr "post-commit hook already exists at $FILE. Aborting!"
+   exit 1
+  fi
+
+  cat > $FILE <<- EOM
+#!/bin/bash
+git linearize
+EOM
+  chmod +x $FILE
+
+  echoinfo "Installed hook to .git/hooks/post-commit!"
+}
+
 EL_FORMAT="%07d0"
 
 while test $# -gt 0; do
@@ -37,23 +69,18 @@ while test $# -gt 0; do
       fi
       shift
       ;;
+    --install-hook)
+      shift
+      install_hook
+      exit 0
+      ;;
     *)
       break
       ;;
   esac
 done
 
-function echoinfo() {
-    LIGHT_GREEN='\033[1;32m'
-    NC='\033[0m' # No Color
-    printf "${LIGHT_GREEN}$1${NC}\n"
-}
 
-function echoerr() {
-    RED='\033[0;31m'
-    NC='\033[0m' # No Color
-    printf "${RED}$1${NC}\n" >&2 
-}
 
 if ! command -v lucky_commit &> /dev/null
 then
