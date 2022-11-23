@@ -3,7 +3,7 @@
 # shit – Short Git.
 #
 # Makes commit indexes from git-linearize ("Extremely Linear Git History") usable with git.
-# 
+#
 # "shit show 14" -> "git show 00000140"
 # "shit log 10..14" -> "git log 00000100..00000140"
 
@@ -20,23 +20,23 @@ RANGE='^([0-9]{1,7})(\.{2,3})([0-9]{1,7})$'
 EL_FORMAT="%07d0"
 
 for arg in "$@"; do
-    if [[ $arg =~ $SINGLE ]] ; then
-        # Looks like a number, add padding
-        # shellcheck disable=SC2059 # Disabled because EL_FORMAT contains the format
-        out=$(printf "$EL_FORMAT" "$arg")
-        X+=("$out")
-    elif [[ $arg =~ $RANGE ]]; then
-        # Convert ranges like "10..14" to "00000100..00000140" 
-        # shellcheck disable=SC2059 # Disabled because EL_FORMAT contains the format
-        first=$(printf "$EL_FORMAT" "${BASH_REMATCH[1]}")
-        dots=${BASH_REMATCH[2]}
-        # shellcheck disable=SC2059 # Disabled because EL_FORMAT contains the format
-        second=$(printf "$EL_FORMAT" "${BASH_REMATCH[3]}")
-        X+=("${first}${dots}${second}")    
-    else
-        # Not a number, keep as-is
-        X+=("$arg")
-    fi
+	if [[ $arg =~ $SINGLE ]]; then
+		# Looks like a number, add padding
+		# shellcheck disable=SC2059 # Disabled because EL_FORMAT contains the format
+		out=$(printf "$EL_FORMAT" "$arg")
+		X+=("$out")
+	elif [[ $arg =~ $RANGE ]]; then
+		# Convert ranges like "10..14" to "00000100..00000140"
+		# shellcheck disable=SC2059 # Disabled because EL_FORMAT contains the format
+		first=$(printf "$EL_FORMAT" "${BASH_REMATCH[1]}")
+		dots=${BASH_REMATCH[2]}
+		# shellcheck disable=SC2059 # Disabled because EL_FORMAT contains the format
+		second=$(printf "$EL_FORMAT" "${BASH_REMATCH[3]}")
+		X+=("${first}${dots}${second}")
+	else
+		# Not a number, keep as-is
+		X+=("$arg")
+	fi
 done
 
 "${X[@]}"
