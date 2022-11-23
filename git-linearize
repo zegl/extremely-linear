@@ -134,7 +134,7 @@ for sha1 in $commits; do
             did_reset=1
         else
             # Cherry pick the next commit
-            git cherry-pick "$sha1"
+            git cherry-pick --keep-redundant-commits --allow-empty-messages "$sha1"
         fi
 
         if ((VERBOSE_LOG)); then
