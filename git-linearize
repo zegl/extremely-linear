@@ -15,90 +15,89 @@ EL_CMD="linearize"
 EL_IF_BRANCH=""
 
 while test $# -gt 0; do
-  case "$1" in
-    -h|--help)
-      echo "git linearize - Create an extremely linear git history"
-      echo ""
-      echo "git linearize [options]"
-      echo ""
-      echo "options:"
-      echo "  -h, --help                      show brief help"
-      echo "  -v, --verbose                   more verbose logging"
-      echo "  --short                         use shorter 6 digit prefix (quick mode)"
-      echo "  --format [format]               specify your own prefix format (pritnf style)"
-      echo "  --install-hook                  installs git-linearize as a post-commit hook (current repo only)"
-      echo "  --if-branch [name]              only run if the current branch is [name], can be combined with --install-hook"
-      exit 0
-      ;;
-    --short)
-      EL_FORMAT="%06d"
-      shift
-      ;;
-    --format)
-      shift
-      if test $# -gt 0; then
-        export EL_FORMAT=$1
-      else
-        echo "no format specified"
-        exit 1
-      fi
-      shift
-      ;;
-    --install-hook)
-      shift
-      EL_CMD="install_hook"
-      ;;
-    --if-branch)
-      shift
-      EL_IF_BRANCH=$1
-      shift
-      ;;
-    -v|--verbose)
-      shift
-      VERBOSE_LOG=1
-      ;;
-    *)
-      break
-      ;;
-  esac
+	case "$1" in
+	-h | --help)
+		echo "git linearize - Create an extremely linear git history"
+		echo ""
+		echo "git linearize [options]"
+		echo ""
+		echo "options:"
+		echo "  -h, --help                      show brief help"
+		echo "  -v, --verbose                   more verbose logging"
+		echo "  --short                         use shorter 6 digit prefix (quick mode)"
+		echo "  --format [format]               specify your own prefix format (pritnf style)"
+		echo "  --install-hook                  installs git-linearize as a post-commit hook (current repo only)"
+		echo "  --if-branch [name]              only run if the current branch is [name], can be combined with --install-hook"
+		exit 0
+		;;
+	--short)
+		EL_FORMAT="%06d"
+		shift
+		;;
+	--format)
+		shift
+		if test $# -gt 0; then
+			export EL_FORMAT=$1
+		else
+			echo "no format specified"
+			exit 1
+		fi
+		shift
+		;;
+	--install-hook)
+		shift
+		EL_CMD="install_hook"
+		;;
+	--if-branch)
+		shift
+		EL_IF_BRANCH=$1
+		shift
+		;;
+	-v | --verbose)
+		shift
+		VERBOSE_LOG=1
+		;;
+	*)
+		break
+		;;
+	esac
 done
 
 ########################################################################################################################
 # Dependencies check                                                                                                   #
 ########################################################################################################################
-if ! command -v lucky_commit &> /dev/null
-then
-    echoerr "[!] Dependency lucky_commit was not found on your PATH"
-    exit 1
+if ! command -v lucky_commit &>/dev/null; then
+	echoerr "[!] Dependency lucky_commit was not found on your PATH"
+	exit 1
 fi
 
 ########################################################################################################################
 # Helper functions                                                                                                     #
 ########################################################################################################################
 function echoinfo() {
-    LIGHT_GREEN='\033[1;32m'
-    NC='\033[0m' # No Color
-    printf "${LIGHT_GREEN}%s${NC}\n" "$1"
+	LIGHT_GREEN='\033[1;32m'
+	NC='\033[0m' # No Color
+	printf "${LIGHT_GREEN}%s${NC}\n" "$1"
 }
 
 function echoerr() {
-    RED='\033[0;31m'
-    NC='\033[0m' # No Color
-    printf "${RED}%s${NC}\n" "$1" >&2
+	RED='\033[0;31m'
+	NC='\033[0m' # No Color
+	printf "${RED}%s${NC}\n" "$1" >&2
 }
 
 function echodebug() {
-    if ((VERBOSE_LOG)); then
-      echoinfo "$1"
-    fi
+	if ((VERBOSE_LOG)); then
+		echoinfo "$1"
+	fi
 }
 
 function git_root() {
-  git rev-parse --show-toplevel
+	git rev-parse --show-toplevel
 }
 
 function git_current_branch() {
-  git branch --show-current
+	git branch --show-current
 }
 
 ########################################################################################################################
@@ -110,24 +109,24 @@ function git_current_branch() {
 #   executing it as a hook.                                                                                            #
 ########################################################################################################################
 function cmd_install_hook() {
-  FILE="$(git_root)/.git/hooks/post-commit"
-  if [ -f "$FILE" ]; then
-   echoerr "post-commit hook already exists at $FILE. Aborting!"
-   exit 1
-  fi
+	FILE="$(git_root)/.git/hooks/post-commit"
+	if [ -f "$FILE" ]; then
+		echoerr "post-commit hook already exists at $FILE. Aborting!"
+		exit 1
+	fi
 
-  FORWARD_IF_BRANCH=""
-  if [[ -n "$EL_IF_BRANCH" ]]; then
-    FORWARD_IF_BRANCH="--if-branch ${EL_IF_BRANCH}"
-  fi
+	FORWARD_IF_BRANCH=""
+	if [[ -n "$EL_IF_BRANCH" ]]; then
+		FORWARD_IF_BRANCH="--if-branch ${EL_IF_BRANCH}"
+	fi
 
-  cat > "$FILE" <<- EOM
-#!/bin/bash
-git linearize ${FORWARD_IF_BRANCH}
-EOM
-  chmod +x "$FILE"
+	cat >"$FILE" <<-EOM
+		#!/bin/bash
+		git linearize ${FORWARD_IF_BRANCH}
+	EOM
+	chmod +x "$FILE"
 
-  echoinfo "Installed hook to .git/hooks/post-commit!"
+	echoinfo "Installed hook to .git/hooks/post-commit!"
 }
 
 ########################################################################################################################
@@ -138,73 +137,73 @@ EOM
 ########################################################################################################################
 function cmd_linearize() {
 
-  # Check branch
-  if [[ -n "$EL_IF_BRANCH" ]] && [[ "${EL_IF_BRANCH}" != "$(git_current_branch)" ]]; then
-    echodebug "[x] Current branch is $(git_current_branch), expected ${EL_IF_BRANCH}. Skipping. :-)"
-    exit 0
-  fi
+	# Check branch
+	if [[ -n "$EL_IF_BRANCH" ]] && [[ "${EL_IF_BRANCH}" != "$(git_current_branch)" ]]; then
+		echodebug "[x] Current branch is $(git_current_branch), expected ${EL_IF_BRANCH}. Skipping. :-)"
+		exit 0
+	fi
 
-  # All commits in our repository (on the current branch)
-  commits=$(git log --format=format:%H --reverse)
+	# All commits in our repository (on the current branch)
+	commits=$(git log --format=format:%H --reverse)
 
-  # Remember which branch we are on
-  pre_branch=$(git branch --show-current)
+	# Remember which branch we are on
+	pre_branch=$(git branch --show-current)
 
-  # Create a new temporary branch to use while crunching the numbers
-  git branch -D extremely-linear || true
-  git checkout -b extremely-linear
+	# Create a new temporary branch to use while crunching the numbers
+	git branch -D extremely-linear || true
+	git checkout -b extremely-linear
 
-  # Find start commit
-  did_reset=0
-  i=0
+	# Find start commit
+	did_reset=0
+	i=0
 
-  for sha1 in $commits; do
-      # Desired prefix of commit
-      # shellcheck disable=SC2059 # Disabled because EL_FORMAT contains the format
-      prefix=$(printf "$EL_FORMAT" $i)
-      ((i=i+1))
+	for sha1 in $commits; do
+		# Desired prefix of commit
+		# shellcheck disable=SC2059 # Disabled because EL_FORMAT contains the format
+		prefix=$(printf "$EL_FORMAT" $i)
+		((i = i + 1))
 
-      # Looping through the full history since the root commit
-      # Making sure that each commit has the expected prefix
-      if [[ "$sha1" == $prefix* ]] && ((!did_reset)); then
-          echodebug "[x] $sha1 starts with $prefix, doing nothing"
-          continue
-      else
-          # Found the first commit that does not have the correct prefix
-          # Reset to this commits parent (the last commit with a good prefix)
-          if ((!did_reset)); then
-              echodebug "[x] Found first misaligned commit=$sha1"
+		# Looping through the full history since the root commit
+		# Making sure that each commit has the expected prefix
+		if [[ "$sha1" == $prefix* ]] && ((!did_reset)); then
+			echodebug "[x] $sha1 starts with $prefix, doing nothing"
+			continue
+		else
+			# Found the first commit that does not have the correct prefix
+			# Reset to this commits parent (the last commit with a good prefix)
+			if ((!did_reset)); then
+				echodebug "[x] Found first misaligned commit=$sha1"
 
-              git reset --hard "$sha1"
-              did_reset=1
-          else
-              # Cherry pick the next commit
-              git cherry-pick --keep-redundant-commits --allow-empty-messages "$sha1"
-          fi
+				git reset --hard "$sha1"
+				did_reset=1
+			else
+				# Cherry pick the next commit
+				git cherry-pick --keep-redundant-commits --allow-empty-messages "$sha1"
+			fi
 
-          echodebug "[x] Fixing $sha1 (looking for prefix=$prefix)"
+			echodebug "[x] Fixing $sha1 (looking for prefix=$prefix)"
 
-          # Run lucky_commit
-          lucky_commit "$prefix"
+			# Run lucky_commit
+			lucky_commit "$prefix"
 
-          new_sha=$(git rev-parse HEAD)
-          echoinfo "[x] $sha1 is now $new_sha"
-      fi
-  done
+			new_sha=$(git rev-parse HEAD)
+			echoinfo "[x] $sha1 is now $new_sha"
+		fi
+	done
 
-  # Move the branch that we used to be on to our new and __improved__ branch!
-  git branch -f "$pre_branch"
-  git checkout "$pre_branch"
+	# Move the branch that we used to be on to our new and __improved__ branch!
+	git branch -f "$pre_branch"
+	git checkout "$pre_branch"
 
-  echoinfo "[x] All done, have a good day"
+	echoinfo "[x] All done, have a good day"
 }
 
 # Time to run something!
 case "$EL_CMD" in
 linearize)
-  cmd_linearize
-  ;;
+	cmd_linearize
+	;;
 install_hook)
-  cmd_install_hook
-  ;;
+	cmd_install_hook
+	;;
 esac
