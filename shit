@@ -22,13 +22,16 @@ EL_FORMAT="%07d0"
 for arg in "$@"; do
     if [[ $arg =~ $SINGLE ]] ; then
         # Looks like a number, add padding
-        out=$(printf "$EL_FORMAT" $arg)
+        # shellcheck disable=SC2059 # Disabled because EL_FORMAT contains the format
+        out=$(printf "$EL_FORMAT" "$arg")
         X+=("$out")
     elif [[ $arg =~ $RANGE ]]; then
         # Convert ranges like "10..14" to "00000100..00000140" 
-        first=$(printf "$EL_FORMAT" ${BASH_REMATCH[1]})
+        # shellcheck disable=SC2059 # Disabled because EL_FORMAT contains the format
+        first=$(printf "$EL_FORMAT" "${BASH_REMATCH[1]}")
         dots=${BASH_REMATCH[2]}
-        second=$(printf "$EL_FORMAT" ${BASH_REMATCH[3]})
+        # shellcheck disable=SC2059 # Disabled because EL_FORMAT contains the format
+        second=$(printf "$EL_FORMAT" "${BASH_REMATCH[3]}")
         X+=("${first}${dots}${second}")    
     else
         # Not a number, keep as-is
