@@ -67,9 +67,10 @@ Many git cilents and forges, abbreviate commit hashes to the first 7 characters.
            \ always zero
 ```
 
-# Future ideas
+# Future ideas and epic hacks
 
 * A pre-merge GitHub action that runs git-linearize
+* A post-commit commit hook
 * Make it easier to organize git-linearize on multiple branches
 
 # Credits
