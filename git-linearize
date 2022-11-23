@@ -8,54 +8,26 @@
 
 set -euo pipefail
 
-function echoinfo() {
-    LIGHT_GREEN='\033[1;32m'
-    NC='\033[0m' # No Color
-    printf "${LIGHT_GREEN}$1${NC}\n"
-}
-
-function echoerr() {
-    RED='\033[0;31m'
-    NC='\033[0m' # No Color
-    printf "${RED}$1${NC}\n" >&2 
-}
-
-function git_root() {
-  git rev-parse --show-toplevel
-}
-
-function install_hook() {
-  FILE="$(git_root)/.git/hooks/post-commit"
-  if [ -f $FILE ]; then
-   echoerr "post-commit hook already exists at $FILE. Aborting!"
-   exit 1
-  fi
-
-  cat > $FILE <<- EOM
-#!/bin/bash
-git linearize
-EOM
-  chmod +x $FILE
-
-  echoinfo "Installed hook to .git/hooks/post-commit!"
-}
-
+# Argument parsing :-)
 EL_FORMAT="%07d0"
 VERBOSE_LOG=0
+EL_CMD="linearize"
+EL_IF_BRANCH=""
 
 while test $# -gt 0; do
   case "$1" in
     -h|--help)
       echo "git linearize - Create an extremely linear git history"
-      echo " "
+      echo ""
       echo "git linearize [options]"
-      echo " "
+      echo ""
       echo "options:"
-      echo "-h, --help                show brief help"
-      echo "-v, --verbose             more verbose logging"
-      echo "--short                   use shorter 6 digit prefix (quick mode)"
-      echo "--format [format]         specify your own prefix format (pritnf style)"
-      echo "--install-hook            install git-linearize as a post-commit hook (current repo only)"
+      echo "  -h, --help                      show brief help"
+      echo "  -v, --verbose                   more verbose logging"
+      echo "  --short                         use shorter 6 digit prefix (quick mode)"
+      echo "  --format [format]               specify your own prefix format (pritnf style)"
+      echo "  --install-hook                  installs git-linearize as a post-commit hook (current repo only)"
+      echo "  --if-branch [name]              only run if the current branch is [name], can be combined with --install-hook"
       exit 0
       ;;
     --short)
@@ -74,8 +46,12 @@ while test $# -gt 0; do
       ;;
     --install-hook)
       shift
-      install_hook
-      exit 0
+      EL_CMD="install_hook"
+      ;;
+    --if-branch)
+      shift
+      EL_IF_BRANCH=$1
+      shift
       ;;
     -v|--verbose)
       shift
@@ -87,70 +63,150 @@ while test $# -gt 0; do
   esac
 done
 
+########################################################################################################################
+# Dependencies check                                                                                                   #
+########################################################################################################################
 if ! command -v lucky_commit &> /dev/null
 then
     echoerr "[!] Dependency lucky_commit was not found on your PATH"
     exit 1
 fi
 
-# All commits in our repository (on the current branch)
-commits=$(git log --format=format:%H --reverse)
+########################################################################################################################
+# Helper functions                                                                                                     #
+########################################################################################################################
+function echoinfo() {
+    LIGHT_GREEN='\033[1;32m'
+    NC='\033[0m' # No Color
+    printf "${LIGHT_GREEN}$1${NC}\n"
+}
 
-# Remember which branch we are on
-pre_branch=$(git branch --show-current)
+function echoerr() {
+    RED='\033[0;31m'
+    NC='\033[0m' # No Color
+    printf "${RED}$1${NC}\n" >&2 
+}
 
-# Create a new temporary branch to use while crunching the numbers
-git branch -D extremely-linear || true
-git checkout -b extremely-linear
+function git_root() {
+  git rev-parse --show-toplevel
+}
 
-# Find start commit
-prev_commit=""
-did_reset=0
-i=0
+function git_current_branch() {
+  git branch --show-current
+}
 
-for sha1 in $commits; do
-    # Desired prefix of commit
-    prefix=$(printf "$EL_FORMAT" $i)
-    ((i=i+1))
+########################################################################################################################
+# cmd_install_hook installs git-linearize as a post-commit hook in the current repository                              #
+#                                                                                                                      #
+# Trigger with "--install-hook"                                                                                        #
+#                                                                                                                      #
+# Use "--if-branch [main]" together with --install-hook to forward the --if-branch setting to git-linearize when       #
+#   executing it as a hook.                                                                                            #
+########################################################################################################################
+function cmd_install_hook() {
+  FILE="$(git_root)/.git/hooks/post-commit"
+  if [ -f "$FILE" ]; then
+   echoerr "post-commit hook already exists at $FILE. Aborting!"
+   exit 1
+  fi
 
-    # Looping through the full history since the root commit
-    # Making sure that each commit has the expected prefix
-    if [[ "$sha1" == $prefix* ]] && ((!did_reset)); then
-        if ((VERBOSE_LOG)); then
-          echoinfo "[x] $sha1 starts with $prefix, doing nothing"
-        fi
+  FORWARD_IF_BRANCH=""
+  if [[ -n "$EL_IF_BRANCH" ]]; then
+    FORWARD_IF_BRANCH="--if-branch ${EL_IF_BRANCH}"
+  fi
 
-        prev_commit="$sha1"
-        continue
-    else
-        # Found the first commit that does not have the correct prefix
-        # Reset to this commits parent (the last commit with a good prefix)
-        if ((!did_reset)); then
-            if ((VERBOSE_LOG)); then
-              echoinfo "[x] Found first misaligned commit=$sha1"
-            fi
+  cat > "$FILE" <<- EOM
+#!/bin/bash
+git linearize ${FORWARD_IF_BRANCH}
+EOM
+  chmod +x "$FILE"
 
-            git reset --hard "$sha1"
-            did_reset=1
-        else
-            # Cherry pick the next commit
-            git cherry-pick --keep-redundant-commits --allow-empty-messages "$sha1"
-        fi
+  echoinfo "Installed hook to .git/hooks/post-commit!"
+}
 
-        if ((VERBOSE_LOG)); then
-          echoinfo "[x] Fixing $sha1 (looking for prefix=$prefix)"
-        fi
+########################################################################################################################
+# cmd_linearize is the default command of git-linearize, it rebases the current branch and gives all commits           #
+#   incremental commit sha1 prefixes.                                                                                  #
+#                                                                                                                      #
+# Use "--if-branch [name]" to only run if the currently checked out branch matches the specified name.                 #
+########################################################################################################################
+function cmd_linearize() {
 
-        # Run lucky_commit
-        lucky_commit "$prefix"
+  # Check branch
+  if [[ -n "$EL_IF_BRANCH" ]] && [[ "${EL_IF_BRANCH}" != "$(git_current_branch)" ]]; then
+    echoinfo "[x] Current branch is $(git_current_branch), expected ${EL_IF_BRANCH}. Skipping. :-)"
+    exit 0
+  fi
 
-        new_sha=$(git rev-parse HEAD)
-        echoinfo "[x] $sha1 is now $new_sha"
-    fi
-done
+  # All commits in our repository (on the current branch)
+  commits=$(git log --format=format:%H --reverse)
 
-# Move the branch that we used to be on to our new and __improved__ branch!
-git branch -f "$pre_branch"
-git checkout "$pre_branch"
+  # Remember which branch we are on
+  pre_branch=$(git branch --show-current)
 
-echoinfo "[x] All done, have a good day"
+  # Create a new temporary branch to use while crunching the numbers
+  git branch -D extremely-linear || true
+  git checkout -b extremely-linear
+
+  # Find start commit
+  prev_commit=""
+  did_reset=0
+  i=0
+
+  for sha1 in $commits; do
+      # Desired prefix of commit
+      prefix=$(printf "$EL_FORMAT" $i)
+      ((i=i+1))
+
+      # Looping through the full history since the root commit
+      # Making sure that each commit has the expected prefix
+      if [[ "$sha1" == $prefix* ]] && ((!did_reset)); then
+          if ((VERBOSE_LOG)); then
+            echoinfo "[x] $sha1 starts with $prefix, doing nothing"
+          fi
+
+          prev_commit="$sha1"
+          continue
+      else
+          # Found the first commit that does not have the correct prefix
+          # Reset to this commits parent (the last commit with a good prefix)
+          if ((!did_reset)); then
+              if ((VERBOSE_LOG)); then
+                echoinfo "[x] Found first misaligned commit=$sha1"
+              fi
+
+              git reset --hard "$sha1"
+              did_reset=1
+          else
+              # Cherry pick the next commit
+              git cherry-pick --keep-redundant-commits --allow-empty-messages "$sha1"
+          fi
+
+          if ((VERBOSE_LOG)); then
+            echoinfo "[x] Fixing $sha1 (looking for prefix=$prefix)"
+          fi
+
+          # Run lucky_commit
+          lucky_commit "$prefix"
+
+          new_sha=$(git rev-parse HEAD)
+          echoinfo "[x] $sha1 is now $new_sha"
+      fi
+  done
+
+  # Move the branch that we used to be on to our new and __improved__ branch!
+  git branch -f "$pre_branch"
+  git checkout "$pre_branch"
+
+  echoinfo "[x] All done, have a good day"
+}
+
+# Time to run something!
+case "$EL_CMD" in
+linearize)
+  cmd_linearize
+  ;;
+install_hook)
+  cmd_install_hook
+  ;;
+esac
