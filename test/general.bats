@@ -99,3 +99,21 @@ function assert_head_commit_not_has_prefix() {
 	run_git_linearize "--short --if-branch main"
 	assert_head_commit_has_prefix 000000
 }
+
+# bats test_tags=short
+@test "custom format" {
+	make_dummy_repo
+	make_dummy_commit
+	run_git_linearize "--format c0de"
+	assert_head_commit_has_prefix c0de
+}
+
+# bats test_tags=short
+@test "install hook" {
+	make_dummy_repo
+	make_dummy_commit
+    make_dummy_commit
+    run_git_linearize "--install-hook --format 123"
+    make_dummy_commit
+	assert_head_commit_has_prefix 123
+}

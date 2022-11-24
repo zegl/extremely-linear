@@ -105,8 +105,8 @@ fi
 #                                                                                                                      #
 # Trigger with "--install-hook"                                                                                        #
 #                                                                                                                      #
-# Use "--if-branch [main]" together with --install-hook to forward the --if-branch setting to git-linearize when       #
-#   executing it as a hook.                                                                                            #
+# If the arguments "--if-branch [name]" or "--format [format]" or "--short" are passed to "--install-hook" they will   #
+#   be forwarded to the execution of git-linearize when triggered by the hook.                                         #
 ########################################################################################################################
 function cmd_install_hook() {
 	FILE="$(git_root)/.git/hooks/post-commit"
@@ -120,9 +120,14 @@ function cmd_install_hook() {
 		FORWARD_IF_BRANCH="--if-branch ${EL_IF_BRANCH}"
 	fi
 
+	FORWARD_FORMAT=""
+	if [[ -n $EL_FORMAT ]]; then
+		FORWARD_IF_BRANCH="--format ${EL_FORMAT}"
+	fi
+
 	cat >"$FILE" <<-EOM
 		#!/bin/bash
-		git linearize ${FORWARD_IF_BRANCH}
+		git linearize ${FORWARD_IF_BRANCH} ${FORWARD_FORMAT}
 	EOM
 	chmod +x "$FILE"
 
