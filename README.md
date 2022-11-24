@@ -69,11 +69,17 @@ Many git cilents and forges, abbreviate commit hashes to the first 7 characters.
            \ always zero
 ```
 
+## Performance? Is this fast? 🏎
+
+Thanks to the GPU powered crashing in lucky_commit, generating a 8 character prefix takes roughyl 2 seconds on my computer (2021 Macbok Pro with M1 Pro).
+
+Using CPU-only crashing (if your computer does not have a GPU) attached, the same opperation takes ~43 seconds on the same computer.
+
 # Future ideas and epic hacks
 
 * A pre-merge GitHub action that runs git-linearize
-* A post-commit commit hook
-* Make it easier to organize git-linearize on multiple branches
+* ✅ A post-commit commit hook
+* Make it easier to organize git-linearize on multiple branches (see: --if-branch)
 
 # Credits
 
