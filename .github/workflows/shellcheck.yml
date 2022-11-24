@@ -1,14 +1,16 @@
 on:
   push: {}
+  pull_request: {}
 
-name: "Trigger: Push action"
+name: "Shell Lint and Format"
 permissions: {}
 
 jobs:
-  shellcheck:
-    name: Shellcheck
+  sh-checker:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Run ShellCheck
-        uses: ludeeus/action-shellcheck@1.1.0
+      - name: Run sh-checker
+        uses: luizm/action-sh-checker@master
+        env:
+          SHFMT_OPTS: -s
