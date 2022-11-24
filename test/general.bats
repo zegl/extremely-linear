@@ -2,12 +2,12 @@
 
 DIR=$(pwd)
 function run_git_linearize() {
-	# shellcheck disable=SC2046
+	# shellcheck disable=SC2086
 	"$DIR/git-linearize" $1
 }
 
 function make_dummy_repo() {
-	cd "$(mktemp -d)"
+	cd "$(mktemp -d)" || exit 1
 	git config --global init.defaultBranch main
 	git init
 	git config --local user.email "testing@example.com"
