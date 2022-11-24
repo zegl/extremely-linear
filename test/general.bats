@@ -112,8 +112,8 @@ function assert_head_commit_not_has_prefix() {
 @test "install hook" {
 	make_dummy_repo
 	make_dummy_commit
-    make_dummy_commit
-    run_git_linearize "--install-hook --format 123"
-    make_dummy_commit
+	make_dummy_commit
+	run_git_linearize "--install-hook --format 123"
+	make_dummy_commit
 	assert_head_commit_has_prefix 123
 }
