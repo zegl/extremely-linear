@@ -2,14 +2,16 @@
 
 DIR=$(pwd)
 function run_git_linearize() {
+    # shellcheck disable=SC2046
     "$DIR/git-linearize" $1
 }
 
 function make_dummy_repo() {
-    git config --global init.defaultBranch master
+    cd "$(mktemp -d)"
+    git config --global init.defaultBranch main
     git init
     git config --local user.email "testing@example.com"
-    git config --local user.name "BATS!"
+    git config --local user.name "BATS"
 }
 
 function make_dummy_commit() {
@@ -30,7 +32,6 @@ function assert_head_commit_not_has_prefix() {
 
 # bats test_tags=short
 @test "test repo one commit (--short)" {
-    cd $(mktemp -d)
     make_dummy_repo
     make_dummy_commit
     run_git_linearize --short
@@ -39,7 +40,6 @@ function assert_head_commit_not_has_prefix() {
 
 
 @test "test repo one commit" {
-    cd $(mktemp -d)
     make_dummy_repo
     make_dummy_commit
     run_git_linearize
@@ -47,7 +47,6 @@ function assert_head_commit_not_has_prefix() {
 }
 
 @test "test repo three commits" {
-    cd $(mktemp -d)
     make_dummy_repo
 
     make_dummy_commit
@@ -60,7 +59,6 @@ function assert_head_commit_not_has_prefix() {
 
 # bats test_tags=short
 @test "test repo three commits (--short)" {
-    cd $(mktemp -d)
     make_dummy_repo
 
     make_dummy_commit
@@ -73,7 +71,6 @@ function assert_head_commit_not_has_prefix() {
 
 # bats test_tags=short
 @test "test repo three commits incrementally" {
-    cd $(mktemp -d)
     make_dummy_repo
 
     make_dummy_commit
@@ -90,8 +87,7 @@ function assert_head_commit_not_has_prefix() {
 
 # bats test_tags=short
 @test "test repo --if-branch no match" {
-    cd $(mktemp -d)
-    git init
+    make_dummy_repo
     make_dummy_commit
     run_git_linearize "--short --if-branch something-random"
     assert_head_commit_not_has_prefix 000000
@@ -99,9 +95,7 @@ function assert_head_commit_not_has_prefix() {
 
 # bats test_tags=short
 @test "test repo --if-branch matches" {
-    cd $(mktemp -d)
     make_dummy_repo
-    git branch -m main
     make_dummy_commit
     run_git_linearize "--short --if-branch main"
     assert_head_commit_has_prefix 000000
