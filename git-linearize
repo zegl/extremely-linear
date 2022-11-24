@@ -178,7 +178,7 @@ function cmd_linearize() {
 				did_reset=1
 			else
 				# Cherry pick the next commit
-				git cherry-pick --keep-redundant-commits --allow-empty-messages "$sha1"
+				git cherry-pick --keep-redundant-commits --allow-empty-message "$sha1"
 			fi
 
 			echodebug "[x] Fixing $sha1 (looking for prefix=$prefix)"
