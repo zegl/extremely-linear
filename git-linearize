@@ -17,21 +17,26 @@ EL_IF_BRANCH=""
 while test $# -gt 0; do
 	case "$1" in
 	-h | --help)
-		echo "git linearize - Create an extremely linear git history"
+	  LIGHT_GREEN='\033[1;32m'
+	  NC='\033[0m' # No Color
+		printf "${LIGHT_GREEN}git linearize - Create an extremely linear git history - github.com/zegl/extremely-linear${NC}\n"
 		echo ""
-		echo "git linearize [mode] [options]"
+		echo "git linearize [command] [options]"
 		echo ""
-		echo "modes: (default mode is to run the linearization process)"
+		echo "command: (default command is to run the linearization process)"
 		echo "  -h, --help           show brief help"
 		echo "  --install-hook       installs git-linearize as a post-commit hook (current repo only)"
 		echo "  --make-epoch         makes the current commit the linearized epoch (00000000), use to adopt git-linearize in"
     echo "                       existing repositories without having to rewrite the full history"
 		echo ""
-		echo "general options (for all modes):"
+		echo "general options (for all commands):"
 		echo "  -v, --verbose                   more verbose logging"
-		echo "  --short                         use shorter 6 digit prefix (quick mode), can be combined with --install-hook and --make-epoch"
-		echo "  --format [format]               specify your own prefix format (pritnf style), can be combined with --install-hook  and --make-epoch"
-		echo "  --if-branch [name]              only run if the current branch is [name], can be combined with --install-hook"
+		echo "  --short                         use shorter 6 digit prefix (quick mode)"
+		echo "  --format [format]               specify your own prefix format (pritnf style)"
+		echo "  --if-branch [name]              only run if the current branch is [name]"
+    echo ""
+    echo "  All command generally support all general options. For example, specifying --format to --install-hook means"
+    echo "  that git-linearize will be called with the same format in the future when triggered by the hook."
 		exit 0
 		;;
 	--short)
