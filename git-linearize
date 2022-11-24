@@ -19,14 +19,18 @@ while test $# -gt 0; do
 	-h | --help)
 		echo "git linearize - Create an extremely linear git history"
 		echo ""
-		echo "git linearize [options]"
+		echo "git linearize [mode] [options]"
 		echo ""
-		echo "options:"
-		echo "  -h, --help                      show brief help"
+		echo "modes: (default mode is to run the linearization process)"
+		echo "  -h, --help           show brief help"
+		echo "  --install-hook       installs git-linearize as a post-commit hook (current repo only)"
+		echo "  --make-epoch         makes the current commit the linearized epoch (00000000), use to adopt git-linearize in"
+    echo "                       existing repositories without having to rewrite the full history"
+		echo ""
+		echo "general options (for all modes):"
 		echo "  -v, --verbose                   more verbose logging"
-		echo "  --short                         use shorter 6 digit prefix (quick mode)"
-		echo "  --format [format]               specify your own prefix format (pritnf style)"
-		echo "  --install-hook                  installs git-linearize as a post-commit hook (current repo only)"
+		echo "  --short                         use shorter 6 digit prefix (quick mode), can be combined with --install-hook and --make-epoch"
+		echo "  --format [format]               specify your own prefix format (pritnf style), can be combined with --install-hook  and --make-epoch"
 		echo "  --if-branch [name]              only run if the current branch is [name], can be combined with --install-hook"
 		exit 0
 		;;
@@ -47,6 +51,10 @@ while test $# -gt 0; do
 	--install-hook)
 		shift
 		EL_CMD="install_hook"
+		;;
+	--make-epoch)
+		shift
+		EL_CMD="make_epoch"
 		;;
 	--if-branch)
 		shift
@@ -90,6 +98,29 @@ function git_root() {
 
 function git_current_branch() {
 	git branch --show-current
+}
+
+function linearize_root_commit() {
+  # shellcheck disable=SC2059 # Disabled because EL_FORMAT contains the format
+	printf "$EL_FORMAT" 0
+}
+
+function find_root_on_current_branch() {
+	# Find the most recent epoch commit (if any) on the current branch
+	# Returns the full commit hash of the root commit
+	git log --oneline --no-abbrev-commit |
+		grep "^$(linearize_root_commit)" |
+		head -n1 |
+		awk '{print $1}'
+}
+
+function git_has_linearize_root() {
+	# Use custom root if there the repositoru has a 00000000-commit that has a parent (is not the repo root)
+	if git show "$(find_root_on_current_branch)^" >/dev/null 2>&1; then
+		return 0
+	else
+		return 1
+	fi
 }
 
 ########################################################################################################################
@@ -148,8 +179,14 @@ function cmd_linearize() {
 		exit 0
 	fi
 
-	# All commits in our repository (on the current branch)
-	commits=$(git log --format=format:%H --reverse)
+	if git_has_linearize_root; then
+		found_root=$(find_root_on_current_branch)
+		echodebug "[x] Repository has a custom root commit (${found_root}), using it as the root"
+		commits=$(git log --format=format:%H --reverse "${found_root}^...HEAD")
+	else
+		echodebug "[x] Repository has a no custom root commit, using the repository root"
+		commits=$(git log --format=format:%H --reverse)
+	fi
 
 	# Remember which branch we are on
 	pre_branch=$(git branch --show-current)
@@ -203,6 +240,20 @@ function cmd_linearize() {
 	echoinfo "[x] All done, have a good day"
 }
 
+########################################################################################################################
+# cmd_make_epoch can be run with the --make-epoch flag                                                                 #
+#                                                                                                                      #
+# Marks the current commit as the epoch (00000000), instead of using the repository root commit as the epoch.          #
+# Respects the --format/--short flags                                                                                  #
+########################################################################################################################
+function cmd_make_epoch() {
+	prefix=$(linearize_root_commit)
+	echodebug "[x] Fixing $(git rev-parse HEAD) (looking for prefix=$prefix)"
+	lucky_commit "$prefix"
+	new_sha=$(git rev-parse HEAD)
+	echoinfo "[x] All done, ${new_sha} is the new git-linearize epoch :-)"
+}
+
 # Time to run something!
 case "$EL_CMD" in
 linearize)
@@ -210,5 +261,8 @@ linearize)
 	;;
 install_hook)
 	cmd_install_hook
+	;;
+make_epoch)
+	cmd_make_epoch
 	;;
 esac

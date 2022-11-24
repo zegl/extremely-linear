@@ -117,3 +117,49 @@ function assert_head_commit_not_has_prefix() {
 	make_dummy_commit
 	assert_head_commit_has_prefix 123
 }
+
+# bats test_tags=short
+@test "custom epoch (--short)" {
+	make_dummy_repo
+	make_dummy_commit
+	make_dummy_commit
+	make_dummy_commit # 0
+	run_git_linearize "--make-epoch --short -v"
+	make_dummy_commit # 1
+	make_dummy_commit # 2
+	run_git_linearize "--short -v"
+	assert_head_commit_has_prefix 000002
+}
+
+@test "custom epoch" {
+	make_dummy_repo
+	make_dummy_commit
+	make_dummy_commit
+	make_dummy_commit # 0
+	run_git_linearize "--make-epoch"
+	make_dummy_commit # 1
+	make_dummy_commit # 2
+	run_git_linearize
+	assert_head_commit_has_prefix 00000020
+}
+
+# bats test_tags=short
+@test "reset custom epoch (--short)" {
+	make_dummy_repo
+	make_dummy_commit
+	make_dummy_commit
+	make_dummy_commit # 0
+	run_git_linearize "--make-epoch --short -v"
+	make_dummy_commit # 1
+	make_dummy_commit # 2
+	run_git_linearize "--short -v"
+
+	run_git_linearize "--make-epoch --short -v" # make a new epoch!
+	make_dummy_commit                           # 1
+	make_dummy_commit                           # 2
+	make_dummy_commit                           # 3
+	make_dummy_commit                           # 4
+	run_git_linearize "--short -v"
+
+	assert_head_commit_has_prefix 000004
+}
