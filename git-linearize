@@ -116,7 +116,7 @@ function cmd_install_hook() {
 	fi
 
 	FORWARD_IF_BRANCH=""
-	if [[ -n "$EL_IF_BRANCH" ]]; then
+	if [[ -n $EL_IF_BRANCH ]]; then
 		FORWARD_IF_BRANCH="--if-branch ${EL_IF_BRANCH}"
 	fi
 
@@ -138,7 +138,7 @@ function cmd_install_hook() {
 function cmd_linearize() {
 
 	# Check branch
-	if [[ -n "$EL_IF_BRANCH" ]] && [[ "${EL_IF_BRANCH}" != "$(git_current_branch)" ]]; then
+	if [[ -n $EL_IF_BRANCH ]] && [[ ${EL_IF_BRANCH} != "$(git_current_branch)" ]]; then
 		echodebug "[x] Current branch is $(git_current_branch), expected ${EL_IF_BRANCH}. Skipping. :-)"
 		exit 0
 	fi
@@ -165,7 +165,7 @@ function cmd_linearize() {
 
 		# Looping through the full history since the root commit
 		# Making sure that each commit has the expected prefix
-		if [[ "$sha1" == $prefix* ]] && ((!did_reset)); then
+		if [[ $sha1 == $prefix* ]] && ((!did_reset)); then
 			echodebug "[x] $sha1 starts with $prefix, doing nothing"
 			continue
 		else
