@@ -23,16 +23,24 @@ or copy the scripts (from the root of this repo) to somewhere on your PATH.
 Run as `git linearize`.
 
 ```
-git linearize - Create an extremely linear git history
+git linearize - Create an extremely linear git history - github.com/zegl/extremely-linear
 
-git linearize [options]
+git linearize [command] [options]
 
-options:
--h, --help                show brief help
--v, --verbose             more verbose logging
---short                   use shorter 6 digit prefix (quick mode)
---format [format]         specify your own prefix format (pritnf style)
---install-hook            install git-linearize as a post-commit hook (current repo only)
+command: (default command is to run the linearization process)
+  -h, --help           show brief help
+  --install-hook       installs git-linearize as a post-commit hook (current repo only)
+  --make-epoch         makes the current commit the linearized epoch (00000000), use to adopt git-linearize in
+                       existing repositories without having to rewrite the full history
+
+general options (for all command):
+  -v, --verbose                   more verbose logging
+  --short                         use shorter 6 digit prefix (quick mode)
+  --format [format]               specify your own prefix format (pritnf style)
+  --if-branch [name]              only run if the current branch is [name]
+
+  All command generally support all general options. For example, specifying --format to --install-hook means
+  that git-linearize will be called with the same format in the future when triggered by the hook.
 ```
 
 git-linearize requires the history to already be linear (no merge commits).
