@@ -17,8 +17,8 @@ EL_IF_BRANCH=""
 while test $# -gt 0; do
 	case "$1" in
 	-h | --help)
-	  LIGHT_GREEN='\033[1;32m'
-	  NC='\033[0m' # No Color
+		LIGHT_GREEN='\033[1;32m'
+		NC='\033[0m' # No Color
 		printf "${LIGHT_GREEN}git linearize - Create an extremely linear git history - github.com/zegl/extremely-linear${NC}\n"
 		echo ""
 		echo "git linearize [command] [options]"
@@ -27,16 +27,16 @@ while test $# -gt 0; do
 		echo "  -h, --help           show brief help"
 		echo "  --install-hook       installs git-linearize as a post-commit hook (current repo only)"
 		echo "  --make-epoch         makes the current commit the linearized epoch (00000000), use to adopt git-linearize in"
-    echo "                       existing repositories without having to rewrite the full history"
+		echo "                       existing repositories without having to rewrite the full history"
 		echo ""
 		echo "general options (for all commands):"
 		echo "  -v, --verbose                   more verbose logging"
 		echo "  --short                         use shorter 6 digit prefix (quick mode)"
 		echo "  --format [format]               specify your own prefix format (pritnf style)"
 		echo "  --if-branch [name]              only run if the current branch is [name]"
-    echo ""
-    echo "  All command generally support all general options. For example, specifying --format to --install-hook means"
-    echo "  that git-linearize will be called with the same format in the future when triggered by the hook."
+		echo ""
+		echo "  All command generally support all general options. For example, specifying --format to --install-hook means"
+		echo "  that git-linearize will be called with the same format in the future when triggered by the hook."
 		exit 0
 		;;
 	--short)
@@ -106,7 +106,7 @@ function git_current_branch() {
 }
 
 function linearize_root_commit() {
-  # shellcheck disable=SC2059 # Disabled because EL_FORMAT contains the format
+	# shellcheck disable=SC2059 # Disabled because EL_FORMAT contains the format
 	printf "$EL_FORMAT" 0
 }
 
