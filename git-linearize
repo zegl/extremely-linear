@@ -19,7 +19,7 @@ while test $# -gt 0; do
 	-h | --help)
 		LIGHT_GREEN='\033[1;32m'
 		NC='\033[0m' # No Color
-		printf "${LIGHT_GREEN}git linearize - Create an extremely linear git history - github.com/zegl/extremely-linear${NC}\n"
+		echo -e "${LIGHT_GREEN}git linearize - Create an extremely linear git history - github.com/zegl/extremely-linear${NC}"
 		echo ""
 		echo "git linearize [command] [options]"
 		echo ""
