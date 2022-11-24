@@ -61,7 +61,7 @@ git-linearize uses [lucky_commit](https://github.com/not-an-aardvark/lucky-commi
 
 ## Prefix format
 
-Many git cilents and forges, abbreviate commit hashes to the first 7 characters. git-linearize uses the first 7 characters for it's counter (0 to 9 999 999), followed by a fixed 0, making the total prefix length 8 characters long.
+Many git clients and forges, abbreviate commit hashes to the first 7 characters. git-linearize uses the first 7 characters for it's counter (0 to 9 999 999), followed by a fixed 0, making the total prefix length 8 characters long.
 
 ```
 | NNNNNNN | 0 | XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX |
@@ -71,9 +71,9 @@ Many git cilents and forges, abbreviate commit hashes to the first 7 characters.
 
 ## Performance? Is this fast? 🏎
 
-Thanks to the GPU powered crashing in lucky_commit, generating a 8 character prefix takes roughyl 2 seconds on my computer (2021 Macbok Pro with M1 Pro).
+Thanks to the GPU powered crashing in lucky_commit, generating a 8 character prefix takes roughly 2 seconds on my computer (2021 Macbook Pro with M1 Pro).
 
-Using CPU-only crashing (if your computer does not have a GPU) attached, the same opperation takes ~43 seconds on the same computer.
+Using CPU-only crashing (if your computer does not have a GPU) attached, the same operation takes ~43 seconds on the same computer.
 
 # Future ideas and epic hacks
 
