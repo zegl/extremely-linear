@@ -5,6 +5,13 @@ function run_git_linearize() {
     "$DIR/git-linearize" $1
 }
 
+function make_dummy_repo() {
+    git config --global init.defaultBranch master
+    git init
+    git config --local user.email "testing@example.com"
+    git config --local user.name "BATS!"
+}
+
 function make_dummy_commit() {
     head -c 24 /dev/random | base64 > foo.txt
     git add foo.txt
@@ -24,7 +31,7 @@ function assert_head_commit_not_has_prefix() {
 # bats test_tags=short
 @test "test repo one commit (--short)" {
     cd $(mktemp -d)
-    git init
+    make_dummy_repo
     make_dummy_commit
     run_git_linearize --short
     assert_head_commit_has_prefix 000000
@@ -33,7 +40,7 @@ function assert_head_commit_not_has_prefix() {
 
 @test "test repo one commit" {
     cd $(mktemp -d)
-    git init
+    make_dummy_repo
     make_dummy_commit
     run_git_linearize
     assert_head_commit_has_prefix 00000000
@@ -41,7 +48,7 @@ function assert_head_commit_not_has_prefix() {
 
 @test "test repo three commits" {
     cd $(mktemp -d)
-    git init
+    make_dummy_repo
 
     make_dummy_commit
     make_dummy_commit
@@ -54,7 +61,7 @@ function assert_head_commit_not_has_prefix() {
 # bats test_tags=short
 @test "test repo three commits (--short)" {
     cd $(mktemp -d)
-    git init
+    make_dummy_repo
 
     make_dummy_commit
     make_dummy_commit
@@ -67,7 +74,7 @@ function assert_head_commit_not_has_prefix() {
 # bats test_tags=short
 @test "test repo three commits incrementally" {
     cd $(mktemp -d)
-    git init
+    make_dummy_repo
 
     make_dummy_commit
     run_git_linearize --short
@@ -93,7 +100,7 @@ function assert_head_commit_not_has_prefix() {
 # bats test_tags=short
 @test "test repo --if-branch matches" {
     cd $(mktemp -d)
-    git init
+    make_dummy_repo
     git branch -m main
     make_dummy_commit
     run_git_linearize "--short --if-branch main"
