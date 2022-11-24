@@ -1,0 +1,16 @@
+on:
+  push: {}
+  pull_request: {}
+
+name: "Shell Lint and Format"
+permissions: {}
+
+jobs:
+  sh-checker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Run sh-checker
+        uses: luizm/action-sh-checker@master
+        env:
+          SHFMT_OPTS: -s
