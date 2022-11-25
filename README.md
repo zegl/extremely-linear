@@ -69,7 +69,7 @@ git-linearize uses [lucky_commit](https://github.com/not-an-aardvark/lucky-commi
 
 ## Prefix format
 
-Many git clients and forges, abbreviate commit hashes to the first 7 characters. git-linearize uses the first 7 characters for it's counter (0 to 9 999 999), followed by a fixed 0, making the total prefix length 8 characters long.
+Many git clients and forges, abbreviate commit hashes to the first 7 characters. git-linearize uses the first 7 characters for the counter (0 to 9 999 999), followed by a fixed 0, making the total prefix length 8 characters long.
 
 ```
 | NNNNNNN | 0 | XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX |
