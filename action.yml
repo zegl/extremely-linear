@@ -2,6 +2,11 @@ name: "Extremely Linear Merging"
 description: '"Merge" GitHub Pull Requests with git-linearize'
 author: "Gustav Westling"
 
+inputs:
+  token:
+    required: true
+    description: GitHub token. The standard GITHUB_TOKEN will do just fine.
+
 runs:
   using: "composite"
   steps:
@@ -9,7 +14,7 @@ runs:
     - name: React to comment
       uses: dkershner6/reaction-action@v1
       with:
-        token: ${{ secrets.GITHUB_TOKEN }}
+        token: ${{ inputs.token }}
 
     # Installation steps
     - name: Install lucky_commit
