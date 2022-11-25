@@ -1,0 +1,67 @@
+name: "Extremely Linear Merging"
+description: '"Merge" GitHub Pull Requests with git-linearize'
+author: "Gustav Westling"
+
+runs:
+  using: "composite"
+  steps:
+    # 👍
+    - name: React to comment
+      uses: dkershner6/reaction-action@v1
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    # Installation steps
+    - name: Install lucky_commit
+      uses: baptiste0928/cargo-install@v1
+      with:
+        crate: lucky_commit
+        args: "--locked --no-default-features"
+    - name: Install git-linearize
+      shell: bash
+      run: |
+        mkdir -p ~/.bin
+        curl -o ~/.bin/git-linearize https://raw.githubusercontent.com/zegl/extremely-linear/main/git-linearize
+        chmod +x ~/.bin/git-linearize
+
+    # Clone and fetch PR metadata
+    - name: Get PR SHA
+      id: sha
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const { owner, repo, number } = context.issue;
+          const pr = await github.rest.pulls.get({
+            owner,
+            repo,
+            pull_number: number,
+          });
+          return {
+            pr_number: number,
+            pr_head_sha: pr.data.head.sha,
+            pr_base_ref: pr.data.base.ref,
+            pr_base_sha: pr.data.base.sha
+          }
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: "0"
+        ref: ${{ fromJSON(steps.sha.outputs.result).pr_head_sha }}
+
+    # Rebase, linearize, and "merge"!
+    - name: "Run git-linearize"
+      shell: bash
+      run: |
+        git fetch origin ${{ fromJSON(steps.sha.outputs.result).pr_base_ref }}
+        git config user.name github-actions
+        git config user.email github-actions@github.com
+        git checkout -b working-branch
+        git rebase origin/${{ fromJSON(steps.sha.outputs.result).pr_base_ref }}
+        ~/.bin/git-linearize -v
+        git push -u origin HEAD:${{ fromJSON(steps.sha.outputs.result).pr_base_ref }}
+        echo "PUSHED_REF=$(git rev-parse HEAD)" >> $GITHUB_ENV
+
+    - name: Comment and close PR
+      uses: peter-evans/close-pull@v2
+      with:
+        pull-request-number: ${{ fromJSON(steps.sha.outputs.result).pr_number }}
+        comment: Landed as ${{ env.PUSHED_REF }}
