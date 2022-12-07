@@ -163,3 +163,27 @@ function assert_head_commit_not_has_prefix() {
 
 	assert_head_commit_has_prefix 000004
 }
+
+# bats test_tags=short
+@test "stash unsaved new file" {
+	make_dummy_repo
+	make_dummy_commit
+	make_dummy_commit
+	run_git_linearize "--short -v"
+	make_dummy_commit
+	echo "unsaved" > unsaved.txt
+	run_git_linearize "--short -v"
+	grep "unsaved" < unsaved.txt
+}
+
+# bats test_tags=short
+@test "stash unsaved existing file" {
+	make_dummy_repo
+	make_dummy_commit
+	make_dummy_commit
+	run_git_linearize "--short -v"
+	make_dummy_commit
+	echo "unsaved" > foo.txt
+	run_git_linearize "--short -v"
+	grep "unsaved" < foo.txt
+}

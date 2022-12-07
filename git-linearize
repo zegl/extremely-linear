@@ -208,6 +208,7 @@ function cmd_linearize() {
 	# Find start commit
 	did_reset=0
 	i=0
+	stashed_commit=""
 
 	for sha1 in $commits; do
 		# Desired prefix of commit
@@ -225,6 +226,10 @@ function cmd_linearize() {
 			# Reset to this commits parent (the last commit with a good prefix)
 			if ((!did_reset)); then
 				echodebug "[x] Found first misaligned commit=$sha1"
+
+				# Create a stash of the local unasved state
+				# Will be restored at the end if we had any unsaved changes
+				stashed_commit="$(git stash create)"
 
 				git reset --hard "$sha1"
 				did_reset=1
@@ -246,6 +251,12 @@ function cmd_linearize() {
 	# Move the branch that we used to be on to our new and __improved__ branch!
 	git branch -f "$pre_branch" | debug
 	git checkout "$pre_branch" | debug
+
+	# Pop stash if we stashed something
+	# If there were local changes, then restore them
+	if [ -n "${stashed_commit}" ]; then
+		git stash apply "${stashed_commit}"
+	fi
 
 	echoinfo "[x] All done, have a good day"
 }
