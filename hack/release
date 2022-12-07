@@ -1,0 +1,57 @@
+#!/bin/bash
+
+function echoinfo() {
+	LIGHT_GREEN='\033[1;32m'
+	NC='\033[0m' # No Color
+	printf "${LIGHT_GREEN}%s${NC}\n" "$1"
+}
+
+git_sha1=$(git rev-parse HEAD)
+
+# shellcheck disable=SC2001
+VERSION=$(echo "${git_sha1:0:7}" | sed -e "s/^0*//")
+echoinfo "[x] Releasing version ${VERSION}"
+
+archive_url="https://github.com/zegl/extremely-linear/archive/${git_sha1}.tar.gz"
+archive_sha=$(curl -sL "$archive_url" | sha256sum | cut -d' ' -f1)
+
+tap_dir=$(mktemp -d)
+git clone "git@github.com:zegl/homebrew-tap.git" "$tap_dir"
+
+cat <<EOF >"${tap_dir}/Formula/git-linearize.rb"
+class GitLinearize < Formula
+  desc "Git Linearize"
+  homepage "https://github.com/zegl/extremely-linear"
+  version "${VERSION}.0.0"
+
+  url "${archive_url}"
+  sha256 "${archive_sha}"
+
+  depends_on "lucky-commit"
+
+  def install
+    bin.install "git-linearize"
+  end
+end
+EOF
+
+cat <<EOF >"${tap_dir}/Formula/git-shit.rb"
+class GitShit < Formula
+  desc "Git Linearize - Short Git Wrapper"
+  homepage "https://github.com/zegl/extremely-linear"
+  version "${VERSION}.0.0"
+
+  url "${archive_url}"
+  sha256 "${archive_sha}"
+
+  def install
+    bin.install "shit"
+  end
+end
+EOF
+
+git -C "$tap_dir" add Formula
+git -C "$tap_dir" commit -m "Update git-linearize to ${VERSION}"
+git -C "$tap_dir" push
+
+echoinfo "[x] Done!"
