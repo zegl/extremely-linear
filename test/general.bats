@@ -171,9 +171,9 @@ function assert_head_commit_not_has_prefix() {
 	make_dummy_commit
 	run_git_linearize "--short -v"
 	make_dummy_commit
-	echo "unsaved" > unsaved.txt
+	echo "unsaved" >unsaved.txt
 	run_git_linearize "--short -v"
-	grep "unsaved" < unsaved.txt
+	grep "unsaved" <unsaved.txt
 }
 
 # bats test_tags=short
@@ -183,7 +183,7 @@ function assert_head_commit_not_has_prefix() {
 	make_dummy_commit
 	run_git_linearize "--short -v"
 	make_dummy_commit
-	echo "unsaved" > foo.txt
+	echo "unsaved" >foo.txt
 	run_git_linearize "--short -v"
-	grep "unsaved" < foo.txt
+	grep "unsaved" <foo.txt
 }
