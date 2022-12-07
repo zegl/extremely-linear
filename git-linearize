@@ -201,10 +201,6 @@ function cmd_linearize() {
 	# Remember which branch we are on
 	pre_branch=$(git branch --show-current)
 
-	# Create a new temporary branch to use while crunching the numbers
-	git branch -D extremely-linear | debug || true
-	git checkout -b extremely-linear | debug
-
 	# Find start commit
 	did_reset=0
 	i=0
@@ -227,6 +223,10 @@ function cmd_linearize() {
 			if ((!did_reset)); then
 				echodebug "[x] Found first misaligned commit=$sha1"
 
+				# Create a new temporary branch to use while crunching the numbers
+				git branch -D extremely-linear | debug || true
+				git checkout -b extremely-linear | debug
+
 				# Create a stash of the local unasved state
 				# Will be restored at the end if we had any unsaved changes
 				stashed_commit="$(git stash create)"
@@ -248,17 +248,21 @@ function cmd_linearize() {
 		fi
 	done
 
-	# Move the branch that we used to be on to our new and __improved__ branch!
-	git branch -f "$pre_branch" | debug
-	git checkout "$pre_branch" | debug
+	if ((did_reset)); then
+		# Move the branch that we used to be on to our new and __improved__ branch!
+		git branch -f "$pre_branch" | debug
+		git checkout "$pre_branch" | debug
 
-	# Pop stash if we stashed something
-	# If there were local changes, then restore them
-	if [ -n "${stashed_commit}" ]; then
-		git stash apply "${stashed_commit}"
+		# Pop stash if we stashed something
+		# If there were local changes, then restore them
+		if [ -n "${stashed_commit}" ]; then
+			git stash apply "${stashed_commit}"
+		fi
+
+		echoinfo "[x] All done, have a good day"
+	else
+		echoinfo "[x] All done, have a good day (nothing to do)"
 	fi
-
-	echoinfo "[x] All done, have a good day"
 }
 
 ########################################################################################################################
