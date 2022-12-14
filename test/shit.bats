@@ -12,7 +12,7 @@ load funcs.bash
 	run_git_linearize --short
 
 	git checkout HEAD~2
-	git co -b branch2
+	git checkout -b branch2
 	make_dummy_commit
 	make_dummy_commit
 	run_git_linearize --short
@@ -32,7 +32,7 @@ load funcs.bash
 	MAIN_TWO=$(git rev-parse HEAD^1)
 
 	git checkout HEAD~2
-	git co -b branch2
+	git checkout -b branch2
 	make_dummy_commit
 	make_dummy_commit
 	run_git_linearize --short
