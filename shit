@@ -17,21 +17,34 @@ SINGLE='^[0-9]{1,7}$'
 RANGE='^([0-9]{1,7})(\.{2,3})([0-9]{1,7})$'
 
 # Format to convert to
-EL_FORMAT="%07d0"
+# Set EL_FORMAT externally to override
+EL_FORMAT="${EL_FORMAT:-%07d0}"
+
+function expand() {
+	# shellcheck disable=SC2059 # Disabled because EL_FORMAT contains the format
+	padded=$(printf "$EL_FORMAT" "$1")
+
+	# Find commit with the given prefix reachable from HEAD
+	reachable=$(git rev-list HEAD | grep --max-count 1 "$padded" | head -n1)
+	if [[ $reachable ]]; then
+		echo "$reachable"
+		return 0
+	fi
+
+	# Fallback to using the prefix
+	echo "$padded"
+}
 
 for arg in "$@"; do
 	if [[ $arg =~ $SINGLE ]]; then
 		# Looks like a number, add padding
-		# shellcheck disable=SC2059 # Disabled because EL_FORMAT contains the format
-		out=$(printf "$EL_FORMAT" "$arg")
+		out=$(expand "$arg")
 		X+=("$out")
 	elif [[ $arg =~ $RANGE ]]; then
 		# Convert ranges like "10..14" to "00000100..00000140"
-		# shellcheck disable=SC2059 # Disabled because EL_FORMAT contains the format
-		first=$(printf "$EL_FORMAT" "${BASH_REMATCH[1]}")
+		first=$(expand "${BASH_REMATCH[1]}")
 		dots=${BASH_REMATCH[2]}
-		# shellcheck disable=SC2059 # Disabled because EL_FORMAT contains the format
-		second=$(printf "$EL_FORMAT" "${BASH_REMATCH[3]}")
+		second=$(expand "${BASH_REMATCH[3]}")
 		X+=("${first}${dots}${second}")
 	else
 		# Not a number, keep as-is
