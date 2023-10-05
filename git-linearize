@@ -134,6 +134,16 @@ function git_has_linearize_root() {
 	fi
 }
 
+function git_is_ready() {
+	# current directory has changes to tracked files
+	if git status --porcelain | grep -v -q "??"; then
+		return 1
+	fi
+
+	# no changes, or only changes to untracked files
+	return 0
+}
+
 ########################################################################################################################
 # Dependencies check                                                                                                   #
 ########################################################################################################################
@@ -169,15 +179,7 @@ function cmd_install_hook() {
 
 	cat >"$FILE" <<-EOM
 		#!/bin/bash
-		if ! git_status_output="$(git status --porcelain)"; then
-		    error_code="$?"
-		    echo "'git status' had an error: $error_code" 
-		elif [ -z "$git_status_output" ]; then
-		    echo "Working directory is clean, linearizing"
-		    git-linearize ${FORWARD_IF_BRANCH} ${FORWARD_FORMAT}
-		else
-		    echo "Working directory has UNCOMMITTED CHANGES.\nNot running git-linearize yet"
-		fi
+		git linearize ${FORWARD_IF_BRANCH} ${FORWARD_FORMAT}
 	EOM
 	chmod +x "$FILE"
 
@@ -194,6 +196,12 @@ function cmd_linearize() {
 	# Check branch
 	if [[ -n $EL_IF_BRANCH ]] && [[ ${EL_IF_BRANCH} != "$(git_current_branch)" ]]; then
 		echodebug "[x] Current branch is $(git_current_branch), expected ${EL_IF_BRANCH}. Skipping. :-)"
+		exit 0
+	fi
+
+	if ! git_is_ready; then
+		echoerr "[x] The current git directory is not clean. Skipping. :-)"
+		echoerr "    Don't worry, git linearize will clean up all commits all at once later."
 		exit 0
 	fi
 
