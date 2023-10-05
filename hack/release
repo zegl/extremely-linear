@@ -12,7 +12,6 @@ function echoerr() {
 	printf "${RED}%s${NC}\n" "$1" >&2
 }
 
-
 ########################################################################################################################
 # Dependencies check                                                                                                   #
 ########################################################################################################################
@@ -20,7 +19,6 @@ if ! command -v sha256sum &>/dev/null; then
 	echoerr "[!] Dependency sha256sum was not found on your PATH. (brew install coreutils)"
 	exit 1
 fi
-
 
 git_sha1=$(git rev-parse HEAD)
 
