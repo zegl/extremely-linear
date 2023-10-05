@@ -2,9 +2,18 @@
 #
 # This script makes sure that all commit hashes have nice and incremental prefixes.
 #
-# Move this script to somewhere on your path, and run it as "git linearize"
+# Move this script to somewhere on your path, and run it as "git linearize".
+#
+# Built by Gustav Westling (@zegl) and friends.
+# https://github.com/zegl/extremely-linear
 #
 # Built with https://github.com/not-an-aardvark/lucky-commit
+#
+# Remember, this is a script that you've downloaded from the internet.
+# Don't run it on anything important unless you know what you're doing.
+# (Which I'm sure that you do, only epic rockstar ninja developers would use a program like this one).
+#
+#
 
 set -euo pipefail
 
