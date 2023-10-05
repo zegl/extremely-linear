@@ -6,6 +6,22 @@ function echoinfo() {
 	printf "${LIGHT_GREEN}%s${NC}\n" "$1"
 }
 
+function echoerr() {
+	RED='\033[0;31m'
+	NC='\033[0m' # No Color
+	printf "${RED}%s${NC}\n" "$1" >&2
+}
+
+
+########################################################################################################################
+# Dependencies check                                                                                                   #
+########################################################################################################################
+if ! command -v sha256sum &>/dev/null; then
+	echoerr "[!] Dependency sha256sum was not found on your PATH. (brew install coreutils)"
+	exit 1
+fi
+
+
 git_sha1=$(git rev-parse HEAD)
 
 # shellcheck disable=SC2001
