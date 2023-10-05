@@ -169,7 +169,15 @@ function cmd_install_hook() {
 
 	cat >"$FILE" <<-EOM
 		#!/bin/bash
-		git linearize ${FORWARD_IF_BRANCH} ${FORWARD_FORMAT}
+		if ! git_status_output="$(git status --porcelain)"; then
+		    error_code="$?"
+		    echo "'git status' had an error: $error_code" 
+		elif [ -z "$git_status_output" ]; then
+		    echo "Working directory is clean, linearizing"
+		    git-linearize ${FORWARD_IF_BRANCH} ${FORWARD_FORMAT}
+		else
+		    echo "Working directory has UNCOMMITTED CHANGES.\nNot running git-linearize yet"
+		fi
 	EOM
 	chmod +x "$FILE"
 
