@@ -10,6 +10,9 @@ make_dummy_commit
 make_dummy_commit
 git switch main
 make_dummy_commit
+git checkout -b branch-2
+make_dummy_commit
+git switch main
 make_dummy_commit
 # a-b-e-f main
 #   \
@@ -26,4 +29,4 @@ else
   echo "nay! $(git merge-base main new-branch)"
 fi
 
-# git log --graph --all
+git log --graph --all
