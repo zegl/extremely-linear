@@ -22,6 +22,7 @@ EL_FORMAT="%07d0"
 VERBOSE_LOG=0
 EL_CMD="linearize"
 EL_IF_BRANCH=""
+EL_REBASE_SPLITS=true
 
 while test $# -gt 0; do
 	case "$1" in
@@ -43,6 +44,7 @@ while test $# -gt 0; do
 		echo "  --short                         use shorter 6 digit prefix (quick mode)"
 		echo "  --format [format]               specify your own prefix format (pritnf style)"
 		echo "  --if-branch [name]              only run if the current branch is [name]"
+		echo "  --no-rebase                     do not rebase branches that split off of this branch onto the new linearized branch"
 		echo ""
 		echo "  All command generally support all general options. For example, specifying --format to --install-hook means"
 		echo "  that git-linearize will be called with the same format in the future when triggered by the hook."
@@ -78,6 +80,10 @@ while test $# -gt 0; do
 	-v | --verbose)
 		shift
 		VERBOSE_LOG=1
+		;;
+	--no-rebase)
+		shift
+		EL_REBASE_SPLITS=false
 		;;
 	*)
 		break
@@ -226,6 +232,20 @@ function cmd_linearize() {
 	# Remember which branch we are on
 	pre_branch=$(git branch --show-current)
 
+	if $EL_REBASE_SPLITS; then
+		split_commits=()
+		for branch in $(git for-each-ref --format="%(refname:short)" refs/heads/); do
+			if [ $branch == $pre_branch ]; then
+				continue
+			fi
+			# merge_base=$(git merge-base "${commits[0]}" "$branch")
+			merge_base=$(git merge-base $pre_branch $branch)
+			echodebug "Found merge base $merge_base for branch $branch"
+			split_commits+=("$merge_base")
+		done
+		echodebug "Split commits: ${split_commits[*]}"
+	fi
+
 	# Find start commit
 	did_reset=0
 	i=0
@@ -252,7 +272,7 @@ function cmd_linearize() {
 				git branch -D extremely-linear | debug || true
 				git checkout -b extremely-linear | debug
 
-				# Create a stash of the local unasved state
+				# Create a stash of the local unsaved state
 				# Will be restored at the end if we had any unsaved changes
 				stashed_commit="$(git stash create)"
 
@@ -270,7 +290,25 @@ function cmd_linearize() {
 
 			new_sha=$(git rev-parse HEAD)
 			echoinfo "[x] $sha1 is now $new_sha"
-		fi
+
+			if $EL_REBASE_SPLITS; then
+				if [[ " ${split_commits[*]} " =~ " ${sha1} " ]]; then
+					# List all branches that share this commit
+					# Then loop through them and rebase them onto the new commit.
+					echodebug "branches $EL_REBASE_SPLITS that contain this commit: $(git branch --contains $sha1)"
+					for branch in $(git branch --contains $sha1); do
+						if [ $branch != $pre_branch ]; then
+							echodebug "rebasing $branch onto $new_sha"
+							git switch $branch | debug
+							git rebase --onto $new_sha $sha1 | debug
+							git switch extremely-linear | debug
+						fi
+					done
+				else
+					echo "$sha1 not in $split_commits"
+				fi
+			fi
+		fi # skip if hash is already nice
 	done
 
 	if ((did_reset)); then

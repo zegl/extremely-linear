@@ -159,3 +159,24 @@ load funcs.bash
 	run_git_linearize "--short -v"
 	grep "unsaved" <foo.txt
 }
+
+@test "Multiple branches" {
+  make_dummy_repo
+  make_dummy_commit
+  git checkout -b new-branch
+  make_dummy_commit
+  make_dummy_commit
+  git switch main
+  make_dummy_commit
+  make_dummy_commit
+  # a-b-e-f main
+  #    \
+  #     c-d new-branch
+  run_git_linearize "--short -v"
+  assert_head_commit_has_prefix 000002
+  git switch new-branch
+  run_git_linearize "--short -v"
+  assert_head_commit_has_prefix 000002
+  # ensure that new-branch and main share the first commit
+  echo $($(git merge-base main new-branch) == 000000*)
+}
