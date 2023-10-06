@@ -293,8 +293,7 @@ function cmd_linearize() {
 			if $EL_REBASE_SPLITS; then
 				# https://stackoverflow.com/a/46243464/14681457
 				if [[ -n "${split_commit_map[$sha1]+unset}" ]]; then
-					# List all branches that share this commit
-					# Then loop through them and rebase them onto the new commit.
+					# rebase the branch onto the new commit
 					branch=${split_commit_map[$sha1]}
 					git switch $branch | debug
 					git rebase --onto $new_sha $sha1 | debug
