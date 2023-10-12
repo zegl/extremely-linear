@@ -1,0 +1,347 @@
+#!/bin/bash
+#
+# This script makes sure that all commit hashes have nice and incremental prefixes.
+#
+# Move this script to somewhere on your path, and run it as "git linearize".
+#
+# Built by Gustav Westling (@zegl) and friends.
+# https://github.com/zegl/extremely-linear
+#
+# Built with https://github.com/not-an-aardvark/lucky-commit
+#
+# Remember, this is a script that you've downloaded from the internet.
+# Don't run it on anything important unless you know what you're doing.
+# (Which I'm sure that you do, only epic rockstar ninja developers would use a program like this one).
+#
+#
+
+set -euo pipefail
+
+# Argument parsing :-)
+EL_FORMAT="%07d0"
+VERBOSE_LOG=0
+EL_CMD="linearize"
+EL_IF_BRANCH=""
+EL_REBASE_SPLITS=true
+
+while test $# -gt 0; do
+	case "$1" in
+	-h | --help)
+		LIGHT_GREEN='\033[1;32m'
+		NC='\033[0m' # No Color
+		echo -e "${LIGHT_GREEN}git linearize using git-branchless - Create an extremely linear git history - github.com/zegl/extremely-linear${NC}"
+		echo ""
+		echo "git linearize [command] [options]"
+		echo ""
+		echo "command: (default command is to run the linearization process)"
+		echo "  -h, --help           show brief help"
+		echo "  --install-hook       installs git-linearize as a post-commit hook (current repo only)"
+		echo "  --make-epoch         makes the current commit the linearized epoch (00000000), use to adopt git-linearize in"
+		echo "                       existing repositories without having to rewrite the full history"
+		echo ""
+		echo "general options (for all commands):"
+		echo "  -v, --verbose                   more verbose logging"
+		echo "  --short                         use shorter 6 digit prefix (quick mode)"
+		echo "  --format [format]               specify your own prefix format (pritnf style)"
+		echo "  --full                          Rewrite entire history, including public commits on the main branch"
+		echo "  --no-rebase                     do not rebase branches that split off of this branch onto the new linearized branch"
+		echo ""
+		echo "  All command generally support all general options. For example, specifying --format to --install-hook means"
+		echo "  that git-linearize will be called with the same format in the future when triggered by the hook."
+		exit 0
+		;;
+	--short)
+		EL_FORMAT="%06d"
+		shift
+		;;
+	--format)
+		shift
+		if test $# -gt 0; then
+			export EL_FORMAT=$1
+		else
+			echo "no format specified"
+			exit 1
+		fi
+		shift
+		;;
+	--install-hook)
+		shift
+		EL_CMD="install_hook"
+		;;
+	--make-epoch)
+		shift
+		EL_CMD="make_epoch"
+		;;
+	--if-branch)
+		shift
+		EL_IF_BRANCH=$1
+		shift
+		;;
+	-v | --verbose)
+		shift
+		VERBOSE_LOG=1
+		;;
+	--)
+		shift
+		EL_REBASE_SPLITS=false
+		;;
+	*)
+		break
+		;;
+	esac
+done
+
+########################################################################################################################
+# Helper functions                                                                                                     #
+########################################################################################################################
+function echoinfo() {
+	LIGHT_GREEN='\033[1;32m'
+	NC='\033[0m' # No Color
+	printf "${LIGHT_GREEN}%s${NC}\n" "$1"
+}
+
+function echoerr() {
+	RED='\033[0;31m'
+	NC='\033[0m' # No Color
+	printf "${RED}%s${NC}\n" "$1" >&2
+}
+
+function echodebug() {
+	if ((VERBOSE_LOG)); then
+		echoinfo "$1"
+	fi
+}
+
+function debug() {
+	if ((VERBOSE_LOG)); then
+		cat >&2
+	fi
+}
+
+function git_root() {
+	git rev-parse --show-toplevel
+}
+
+function git_current_branch() {
+	git rev-parse --abbrev-ref HEAD
+}
+
+function linearize_root_commit() {
+	# shellcheck disable=SC2059 # Disabled because EL_FORMAT contains the format
+	printf "$EL_FORMAT" 0
+}
+
+function find_format_base() {
+  local pattern='%0[0-7]*([bxd])'
+  
+  if [[ $EL_FORMAT =~ $pattern ]]; then
+    local match="${BASH_REMATCH[1]}"
+    # echo $match
+    case "$match" in
+      b) echo 2 ;;  # Binary format specifier
+      x) echo 16 ;; # Hexadecimal format specifier
+      o) echo 8  ;;  # Octal format specifier
+      d) echo 10 ;;  # Decimal format specifier
+      *) echoerr "[x] Your format was kind of ok, but I still won't do anything with it >:)"
+         exit 1  ;; # Unknown format specifier
+    esac
+  else
+    echoerr "[x] Could not understand your format"
+    exit 1 # No valid printf pattern found
+  fi
+}
+
+# function find_root_on_current_branch() {
+# 	# Find the most recent epoch commit (if any) on the current branch
+# 	# Returns the full commit hash of the root commit
+# 	git log --oneline --no-abbrev-commit |
+# 		grep "^$(linearize_root_commit)" |
+# 		head -n1 |
+# 		awk '{print $1}'
+# }
+
+# function git_has_linearize_root() {
+# 	# Use custom root if there the repositoru has a 00000000-commit that has a parent (is not the repo root)
+# 	if git show "$(find_root_on_current_branch)^" >/dev/null 2>&1; then
+# 		return 0
+# 	else
+# 		return 1
+# 	fi
+# }
+
+# function git_is_ready() {
+# 	# current directory has changes to tracked files
+# 	if git status --porcelain | grep -v -q "??"; then
+# 		return 1
+# 	fi
+
+# 	# no changes, or only changes to untracked files
+# 	return 0
+# }
+
+########################################################################################################################
+# Dependencies check                                                                                                   #
+########################################################################################################################
+if ! command -v lucky_commit &>/dev/null; then
+	echoerr "[!] Dependency lucky_commit was not found on your PATH"
+	exit 1
+fi
+
+if ! command -v git-branchless &>/dev/null; then
+  echoerr "[!] Dependency git-branchless was not found on your PATH"
+  exit 1
+fi
+
+if ! git sl ; then
+  echoerr "[!] Git branchless not initialized. Will do it for you :)"
+  git branchless init
+fi
+
+########################################################################################################################
+# cmd_install_hook installs git-linearize as a post-commit hook in the current repository                              #
+#                                                                                                                      #
+# Trigger with "--install-hook"                                                                                        #
+#                                                                                                                      #
+# If the arguments "--if-branch [name]" or "--format [format]" or "--short" are passed to "--install-hook" they will   #
+#   be forwarded to the execution of git-linearize when triggered by the hook.                                         #
+########################################################################################################################
+function cmd_install_hook() {
+	FILE="$(git_root)/.git/hooks/post-commit"
+	if [ -f "$FILE" ]; then
+		echoerr "post-commit hook already exists at $FILE. Aborting!"
+		exit 1
+	fi
+
+	FORWARD_FORMAT=""
+	if [[ -n $EL_FORMAT ]]; then
+		FORWARD_IF_BRANCH="--format ${EL_FORMAT}"
+	fi
+
+	cat >"$FILE" <<-EOM
+		#!/bin/bash
+		git linearize ${FORWARD_FORMAT}
+	EOM
+	chmod +x "$FILE"
+
+	echoinfo "Installed hook to .git/hooks/post-commit!"
+}
+
+########################################################################################################################
+# cmd_linearize is the default command of git-linearize, it rebases the current branch and gives all commits           #
+#   incremental commit sha1 prefixes.                                                                                  #
+#                                                                                                                      #
+# Use "--if-branch [name]" to only run if the currently checked out branch matches the specified name.                 #
+########################################################################################################################
+function cmd_linearize() {
+	# Check branch
+	# if [[ -n $EL_IF_BRANCH ]] && [[ ${EL_IF_BRANCH} != "$(git_current_branch)" ]]; then
+	# 	echodebug "[x] Current branch is $(git_current_branch), expected ${EL_IF_BRANCH}. Skipping. :-)"
+	# 	exit 0
+	# fi
+
+	# if ! git_is_ready; then
+	# 	echoerr "[x] The current git directory is not clean. Skipping. :-)"
+	# 	echoerr "    Don't worry, git linearize will clean up all commits all at once later."
+	# 	exit 0
+	# fi
+
+	# if git_has_linearize_root; then
+	# 	found_root=$(find_root_on_current_branch)
+	# 	echodebug "[x] Repository has a custom root commit (${found_root}), using it as the root"
+	# 	commits=$(git log --format=format:%H --reverse "${found_root}^...HEAD")
+	# else
+	# 	echodebug "[x] Repository has a no custom root commit, using the repository root"
+	# 	commits=$(git log --format=format:%H --reverse)
+	# fi
+
+	# Remember which branch we are on <- this does not work with HEAD nicely
+	pre_branch=$(git_current_branch)
+  fbase=$(find_format_base)
+  prefix=$(printf "$EL_FORMAT" 0)
+  flength=${#prefix}
+  echo $fbase
+  # go back unto the first properly formatted commit
+  while true; do
+    # $get the sha
+    # sha stands for "Short HAsh" to avoid confusion
+    sha=$(git rev-parse --short HEAD)
+    # first try printing the sha
+    flsha="${sha:0:$flength}"
+    if printf "$EL_FORMAT" $flsha >/dev/null 2>&1; then
+      #this still fails if the commit format is shorter than the output of git rev-parse --short
+      i=$(($fbase#$flsha))
+      if [ $(printf "$EL_FORMAT" $i 2>/dev/null) == $flsha ]; then
+        echoinfo "Found first well-formatted commit! $flsha"
+        i=$(($i+1))
+        git next > /dev/null 2>&1
+        break
+      else
+        echodebug "Found commit $flsha that could format"
+        echodebug "However, using $EL_FORMAT, base $fbase: $i does not give good results"
+      fi
+    fi
+    # go to previous commit
+    if ! git prev > /dev/null 2>&1; then
+      echoinfo "Found no well-formatted commit until the root"
+      i=0
+      break
+    fi
+  done
+
+  echoinfo "Starting formatting"
+  while true; do
+    #lha stands for Long HAsh
+    lha=$(git rev-parse HEAD)
+    prefix=$(printf "$EL_FORMAT" $i)
+    echoinfo "Looking for $lha #$i"
+    lucky_commit $prefix
+    #fha stands for Formatted HAsh
+    fha=$(git rev-parse HEAD)
+    echoinfo "Formatted $lha to $fha"
+    git move -fs $lha > /dev/null 2>&1 # | debug
+    git hide $lha > /dev/null 2>&1
+    i=$(($i+1))
+    if ! git next > /dev/null 2>&1; then
+      if [ $pre_branch == "HEAD" ]; then
+        echoinfo "encountered a branch and don't have a target: $pre_branch, aborting"
+        exit 0
+      fi
+      logs=($(git log --reverse HEAD..$pre_branch --format=format:%H))
+      if [ ${#logs[@]} -eq 0 ]; then
+        echoinfo "All done, have a good day!"
+        exit 0
+      elif [ ${logs[0]} == $(git rev-parse $pre_branch) ]; then
+        git checkout $pre_branch | debug
+      else
+        git checkout ${logs[0]} | debug
+      fi
+    fi
+  done
+}
+
+########################################################################################################################
+# cmd_make_epoch can be run with the --make-epoch flag                                                                 #
+#                                                                                                                      #
+# Marks the current commit as the epoch (00000000), instead of using the repository root commit as the epoch.          #
+# Respects the --format/--short flags                                                                                  #
+########################################################################################################################
+function cmd_make_epoch() {
+	prefix=$(linearize_root_commit)
+	echodebug "[x] Fixing $(git rev-parse HEAD) (looking for prefix=$prefix)"
+	lucky_commit "$prefix"
+	new_sha=$(git rev-parse HEAD)
+	echoinfo "[x] All done, ${new_sha} is the new git-linearize epoch :-)"
+}
+
+# Time to run something!
+case "$EL_CMD" in
+linearize)
+	cmd_linearize
+	;;
+install_hook)
+	cmd_install_hook
+	;;
+make_epoch)
+	cmd_make_epoch
+	;;
+esac
