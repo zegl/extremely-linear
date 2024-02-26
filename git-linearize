@@ -195,6 +195,12 @@ function cmd_install_hook() {
 	echoinfo "Installed hook to .git/hooks/post-commit!"
 }
 
+# Check that we're running inside a git directory
+if ! git_root &>/dev/null; then
+	echoerr "[!] fatal: not a git repository (or any of the parent directories)"
+	exit 1
+fi
+
 ########################################################################################################################
 # cmd_linearize is the default command of git-linearize, it rebases the current branch and gives all commits           #
 #   incremental commit sha1 prefixes.                                                                                  #
