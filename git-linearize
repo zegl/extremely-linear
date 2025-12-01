@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # This script makes sure that all commit hashes have nice and incremental prefixes.
 #
@@ -187,7 +187,7 @@ function cmd_install_hook() {
 	fi
 
 	cat >"$FILE" <<-EOM
-		#!/bin/bash
+		#!/usr/bin/env bash
 		git linearize ${FORWARD_IF_BRANCH} ${FORWARD_FORMAT}
 	EOM
 	chmod +x "$FILE"
