@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 function echoinfo() {
 	LIGHT_GREEN='\033[1;32m'
